@@ -105,9 +105,9 @@ there installs cleanly. Install a listing by name (the CLI falls back to the
 marketplace when a bare name is not in the bundled registry):
 
 ```bash
-outfit add code-reviewer                                       # resolves via the marketplace
-outfit add https://outfits.mycelium.markets/api/outfit/code-reviewer   # or the raw URL
-outfit use code-reviewer
+outfit add some-published-outfit                                       # bare name: registry, then marketplace
+outfit add https://outfits.mycelium.markets/api/outfit/some-published-outfit   # or the raw URL
+outfit use some-published-outfit
 ```
 
 Publish your own from the site's upload page. The raw
