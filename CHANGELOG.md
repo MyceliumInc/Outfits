@@ -3,6 +3,12 @@
 All notable changes to this project are documented here. The format is based on
 Keep a Changelog, and this project adheres to semantic versioning.
 
+## [0.1.4] - 2026-06-21
+
+- Repository renamed `MyceliumInc/Outfits` -> `MyceliumInc/Outfit`. Updated all
+  in-repo URLs (raw schema `$id` and `RAW_BASE`, README badges/links, package
+  metadata, issue templates) to the new path.
+
 ## [0.1.3] - 2026-06-21
 
 - `outfit add <name>` now falls back to the marketplace at `outfits.mycelium.markets`

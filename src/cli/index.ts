@@ -94,7 +94,7 @@ function readTemplate(name: string): string {
   return readFileSync(fileURLToPath(new URL(`../../templates/${name}`, import.meta.url)), "utf8");
 }
 
-const RAW_BASE = "https://raw.githubusercontent.com/MyceliumInc/Outfits/HEAD/";
+const RAW_BASE = "https://raw.githubusercontent.com/MyceliumInc/Outfit/HEAD/";
 const REGISTRY_URL = RAW_BASE + "registry/index.json";
 const MARKET_BASE = "https://outfits.mycelium.markets";
 
@@ -561,7 +561,7 @@ const commands: Record<string, Command> = {
 };
 
 function scaffold(name: string): string {
-  return `# yaml-language-server: $schema=https://raw.githubusercontent.com/MyceliumInc/Outfits/HEAD/schema/outfit.schema.json
+  return `# yaml-language-server: $schema=https://raw.githubusercontent.com/MyceliumInc/Outfit/HEAD/schema/outfit.schema.json
 apiVersion: outfit/v1
 name: ${name}
 description: Describe what this agent is for.

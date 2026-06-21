@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/MyceliumInc/Outfits/HEAD/assets/banner.png" alt="Outfit - a row of cute agent mascots, each wearing a different outfit" width="640">
+  <img src="https://raw.githubusercontent.com/MyceliumInc/Outfit/HEAD/assets/banner.png" alt="Outfit - a row of cute agent mascots, each wearing a different outfit" width="640">
 </p>
 
 <h1 align="center">Outfit</h1>
 
-[![CI](https://github.com/MyceliumInc/Outfits/actions/workflows/ci.yml/badge.svg)](https://github.com/MyceliumInc/Outfits/actions/workflows/ci.yml)
+[![CI](https://github.com/MyceliumInc/Outfit/actions/workflows/ci.yml/badge.svg)](https://github.com/MyceliumInc/Outfit/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
@@ -62,7 +62,7 @@ npm install -g @myceliuminc/outfit
 Or from source:
 
 ```bash
-git clone https://github.com/MyceliumInc/Outfits && cd Outfits
+git clone https://github.com/MyceliumInc/Outfit && cd Outfit
 npm install && npm run build && npm link
 ```
 
@@ -154,7 +154,7 @@ capabilities:
     scope: { paths: ["**/*"] }
 ```
 
-Add `# yaml-language-server: $schema=https://raw.githubusercontent.com/MyceliumInc/Outfits/HEAD/schema/outfit.schema.json` as
+Add `# yaml-language-server: $schema=https://raw.githubusercontent.com/MyceliumInc/Outfit/HEAD/schema/outfit.schema.json` as
 the first line of your outfit for editor validation. See [`examples/`](examples/) for
 more, including `stock-analyst` (web + scoped writes) and `notes-keeper` (an integration).
 
