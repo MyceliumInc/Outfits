@@ -96,6 +96,7 @@ function readTemplate(name: string): string {
 
 const RAW_BASE = "https://raw.githubusercontent.com/MyceliumInc/Outfits/HEAD/";
 const REGISTRY_URL = RAW_BASE + "registry/index.json";
+const MARKET_BASE = "https://outfits.mycelium.markets";
 
 function userOutfitsDir(): string {
   return join(homedir(), ".outfit", "outfits");
@@ -111,10 +112,12 @@ async function resolveRef(ref: string): Promise<string> {
   if (/^https?:\/\//.test(ref)) return ref;
   const gh = ref.match(/^github:([^/]+)\/([^/]+)\/(.+)$/);
   if (gh) return `https://raw.githubusercontent.com/${gh[1]}/${gh[2]}/HEAD/${gh[3]}`;
-  const index = JSON.parse(await fetchText(REGISTRY_URL));
-  const entry = (index.outfits ?? []).find((o: any) => o.name === ref);
-  if (!entry) die(`No outfit named "${ref}" in the registry. Pass a URL or github:user/repo/path instead.`);
-  return /^https?:\/\//.test(entry.source) ? entry.source : RAW_BASE + entry.source;
+  try {
+    const index = JSON.parse(await fetchText(REGISTRY_URL));
+    const entry = (index.outfits ?? []).find((o: any) => o.name === ref);
+    if (entry) return /^https?:\/\//.test(entry.source) ? entry.source : RAW_BASE + entry.source;
+  } catch {}
+  return `${MARKET_BASE}/api/outfit/${encodeURIComponent(ref)}`;
 }
 
 async function addOutfit(ref: string): Promise<{ name: string; dest: string }> {
@@ -280,7 +283,7 @@ const commands: Record<string, Command> = {
   },
 
   add: {
-    summary: "Fetch and install an outfit from a URL, github ref, or the registry",
+    summary: "Fetch and install an outfit from a URL, github ref, the registry, or the marketplace",
     usage: "outfit add <url | github:user/repo/path | name>",
     async run(p) {
       const ref = p.positionals[0] ?? die("Usage: outfit add <url | github:user/repo/path | name>");

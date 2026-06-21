@@ -96,6 +96,24 @@ outfit status     # code-reviewer (claude-code)
 outfit doff       # native tools restored, exactly as before
 ```
 
+## Marketplace
+
+Browse, star, and download community outfits at
+**[outfits.mycelium.markets](https://outfits.mycelium.markets)**. Every listing is
+validated against this package's schema and ontology before it goes live, so anything
+there installs cleanly. Install a listing by name (the CLI falls back to the
+marketplace when a bare name is not in the bundled registry):
+
+```bash
+outfit add code-reviewer                                       # resolves via the marketplace
+outfit add https://outfits.mycelium.markets/api/outfit/code-reviewer   # or the raw URL
+outfit use code-reviewer
+```
+
+Publish your own from the site's upload page. The raw
+`outfits.mycelium.markets/api/outfit/<name>` endpoint serves the canonical
+`*.outfit.yaml` and is what `outfit add` fetches.
+
 ## How enforcement works
 
 The trick is the **Outfit Gateway**, an MCP server that is the agent's entire tool-world:
@@ -202,7 +220,7 @@ Outfit raises the floor; it is not a sandbox.
 | Command | What it does |
 | ------- | ------------ |
 | `outfit list [--json]` | Discover outfits across search paths |
-| `outfit add <url\|github:..\|name>` | Fetch and install an outfit |
+| `outfit add <url\|github:..\|name>` | Fetch and install an outfit (a bare name resolves via the registry, then the [marketplace](https://outfits.mycelium.markets)) |
 | `outfit remove <name>` | Remove an installed outfit |
 | `outfit init <name>` | Scaffold a new outfit in `./outfits` |
 | `outfit validate <ref> [--json]` | Schema + ontology validation |

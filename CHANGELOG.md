@@ -3,6 +3,13 @@
 All notable changes to this project are documented here. The format is based on
 Keep a Changelog, and this project adheres to semantic versioning.
 
+## [0.1.3] - 2026-06-21
+
+- `outfit add <name>` now falls back to the marketplace at `outfits.mycelium.markets`
+  when a bare name is not found in the bundled GitHub registry.
+- Document the marketplace (`outfits.mycelium.markets`) for browsing, downloading, and
+  publishing outfits.
+
 ## [0.1.2] - 2026-06-21
 
 - Add project logo: a cute multi-outfit mascot banner shown at the top of the README.

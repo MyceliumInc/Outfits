@@ -8,6 +8,12 @@ Outfit turns an agent persona into a contract the runtime enforces, not a prompt
 ignore. An outfit is one declarative YAML/JSON file (identity + capabilities + permissions
 + optional integrations/skills). The package is the `@myceliuminc/outfit` npm CLI/library.
 
+The public marketplace is `outfits.mycelium.markets` (the sibling `OutfitMarket` repo): a
+Supabase-backed registry of downloadable outfits. It is distinct from the bundled
+`examples/` and the GitHub `registry/index.json`. `outfit add <name>` resolves a bare name
+against the GitHub registry first, then falls back to the marketplace at
+`outfits.mycelium.markets/api/outfit/<name>`, which serves the canonical `*.outfit.yaml`.
+
 ## Commands
 
 ```bash
