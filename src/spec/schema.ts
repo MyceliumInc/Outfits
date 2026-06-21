@@ -8,19 +8,25 @@ export const ShellScope = z.object({
   deny: z.array(z.string()).default([]),
   timeoutMs: z.number().int().positive().optional(),
 });
+export type ShellScope = z.infer<typeof ShellScope>;
 
 export const FsScope = z.object({
   paths: z.array(z.string()).default([]),
 });
+export type FsScope = z.infer<typeof FsScope>;
 
 export const NetScope = z.object({
   domains: z.array(z.string()).default([]),
 });
+export type NetScope = z.infer<typeof NetScope>;
+
+export const Scope = z.record(z.unknown());
+export type Scope = z.infer<typeof Scope>;
 
 export const Capability = z.object({
   id: z.string(),
   enforcement: Enforcement.default("hard"),
-  scope: z.record(z.any()).default({}),
+  scope: Scope.default({}),
 });
 export type Capability = z.infer<typeof Capability>;
 
@@ -48,6 +54,7 @@ export const Identity = z.object({
   prompt: z.string(),
   model: z.string().optional(),
 });
+export type Identity = z.infer<typeof Identity>;
 
 export const Outfit = z.object({
   apiVersion: z.literal("outfit/v1"),
@@ -59,6 +66,6 @@ export const Outfit = z.object({
   capabilities: z.array(Capability).default([]),
   skills: z.array(Skill).default([]),
   integrations: z.array(Integration).default([]),
-  extensions: z.record(z.any()).default({}),
+  extensions: z.record(z.unknown()).default({}),
 });
 export type Outfit = z.infer<typeof Outfit>;

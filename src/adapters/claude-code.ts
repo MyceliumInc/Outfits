@@ -4,8 +4,9 @@ import type { Outfit } from "../spec/index.js";
 import type { Adapter, CompileResult } from "./types.js";
 
 export const NATIVE_TOOLS = [
-  "Bash", "Read", "Write", "Edit", "MultiEdit", "NotebookEdit",
-  "WebFetch", "WebSearch", "Glob", "Grep", "Task",
+  "Bash", "BashOutput", "KillShell", "Read", "Write", "Edit", "MultiEdit",
+  "NotebookEdit", "WebFetch", "WebSearch", "Glob", "Grep", "Task",
+  "TodoWrite", "ExitPlanMode", "SlashCommand",
 ];
 
 function serverName(outfit: Outfit): string {
@@ -41,7 +42,8 @@ export function removeBlock(
   if (s === -1 || e === -1 || e < s) return content;
   const before = content.slice(0, s).replace(/\n+$/, "");
   const after = content.slice(e + markers.end.length).replace(/^\n+/, "");
-  return [before, after].filter(Boolean).join("\n\n") + (before || after ? "\n" : "");
+  const joined = [before, after].filter(Boolean).join("\n\n");
+  return joined ? joined.replace(/\n*$/, "\n") : "";
 }
 
 function skillBlock(outfit: Outfit): string {

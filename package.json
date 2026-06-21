@@ -2,6 +2,13 @@
   "name": "outfit",
   "version": "0.1.0",
   "description": "Portable, enforced agent personas. One spec - any runtime.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MyceliumInc/Outfits.git"
+  },
+  "homepage": "https://github.com/MyceliumInc/Outfits#readme",
+  "bugs": "https://github.com/MyceliumInc/Outfits/issues",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -53,6 +60,5 @@
   "devDependencies": {
     "@types/node": "^22.7.0",
     "typescript": "^5.6.0"
-  },
-  "license": "MIT"
+  }
 }

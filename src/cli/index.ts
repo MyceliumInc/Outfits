@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync, existsSync, rmSync, readdirSync } from "node:fs";
 import { join, resolve, relative, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
@@ -9,9 +9,10 @@ import {
   discoverOutfits,
   validateSemantics,
   ONTOLOGY,
+  type ValidationIssue,
 } from "../spec/index.js";
 import { getAdapter, ADAPTERS } from "../adapters/index.js";
-import { NATIVE_TOOLS, personaMarkers, removeBlock } from "../adapters/claude-code.js";
+import { personaMarkers, removeBlock } from "../adapters/claude-code.js";
 import { runGateway } from "../gateway/index.js";
 import { doctor } from "./doctor.js";
 
@@ -76,7 +77,7 @@ function isOutfitDevRepo(dir: string): boolean {
   }
 }
 
-function printIssues(issues: { level: string; message: string }[]): void {
+function printIssues(issues: ValidationIssue[]): void {
   for (const i of issues) {
     const tag = i.level === "error" ? C.red("error") : C.yellow("warn ");
     console.log(`  ${tag}  ${i.message}`);
@@ -85,6 +86,83 @@ function printIssues(issues: { level: string; message: string }[]): void {
 
 function readTemplate(name: string): string {
   return readFileSync(fileURLToPath(new URL(`../../templates/${name}`, import.meta.url)), "utf8");
+}
+
+function pruneDirIfEmpty(dir: string): void {
+  try {
+    if (existsSync(dir) && readdirSync(dir).length === 0) rmSync(dir, { recursive: true, force: true });
+  } catch {}
+}
+
+function snapshotState(cwd: string): {
+  created: { mcp: boolean; settings: boolean };
+  prevDeny: string[];
+  prevAllow: string[];
+} {
+  const mcpPath = join(cwd, ".mcp.json");
+  const settingsPath = join(cwd, ".claude", "settings.json");
+  let prevDeny: string[] = [];
+  let prevAllow: string[] = [];
+  if (existsSync(settingsPath)) {
+    try {
+      const s = JSON.parse(readFileSync(settingsPath, "utf8"));
+      prevDeny = s.permissions?.deny ?? [];
+      prevAllow = s.permissions?.allow ?? [];
+    } catch {}
+  }
+  return {
+    created: { mcp: !existsSync(mcpPath), settings: !existsSync(settingsPath) },
+    prevDeny,
+    prevAllow,
+  };
+}
+
+function removeWorn(cwd: string): string | null {
+  const manifestPath = join(cwd, ".outfit", "applied.json");
+  if (!existsSync(manifestPath)) return null;
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+  const files: string[] = manifest.files ?? [];
+
+  for (const f of files) {
+    if (f.endsWith(".mcp.json") || f.endsWith("settings.json")) continue;
+    if (f.endsWith("CLAUDE.md")) {
+      if (!existsSync(f)) continue;
+      const stripped = removeBlock(readFileSync(f, "utf8"), personaMarkers(manifest.name));
+      if (stripped.trim()) writeFileSync(f, stripped);
+      else rmSync(f, { force: true });
+      continue;
+    }
+    try { rmSync(f, { force: true }); } catch {}
+    pruneDirIfEmpty(dirname(f));
+  }
+  pruneDirIfEmpty(join(cwd, ".claude", "skills"));
+
+  const mcpPath = join(cwd, ".mcp.json");
+  if (existsSync(mcpPath)) {
+    const mcp = JSON.parse(readFileSync(mcpPath, "utf8"));
+    if (mcp.mcpServers) delete mcp.mcpServers[manifest.serverName];
+    const empty = !mcp.mcpServers || Object.keys(mcp.mcpServers).length === 0;
+    if (empty && manifest.created?.mcp) rmSync(mcpPath, { force: true });
+    else writeFileSync(mcpPath, JSON.stringify(mcp, null, 2) + "\n");
+  }
+
+  const settingsPath = join(cwd, ".claude", "settings.json");
+  if (existsSync(settingsPath)) {
+    if (manifest.created?.settings) {
+      rmSync(settingsPath, { force: true });
+    } else {
+      const s = JSON.parse(readFileSync(settingsPath, "utf8"));
+      s.permissions = s.permissions ?? {};
+      s.permissions.deny = manifest.prevDeny ?? [];
+      s.permissions.allow = manifest.prevAllow ?? [];
+      writeFileSync(settingsPath, JSON.stringify(s, null, 2) + "\n");
+    }
+  }
+
+  rmSync(manifestPath, { force: true });
+  pruneDirIfEmpty(join(cwd, ".outfit"));
+  pruneDirIfEmpty(join(cwd, ".claude"));
+  return manifest.name;
 }
 
 const commands: Record<string, { summary: string; run: (p: Parsed) => Promise<void> | void }> = {
@@ -209,6 +287,8 @@ const commands: Record<string, { summary: string; run: (p: Parsed) => Promise<vo
         printIssues(report.issues.filter((x) => x.level === "error"));
         die("Cannot wear this outfit - see errors above.");
       }
+      const previous = removeWorn(cwd);
+      const snapshot = snapshotState(cwd);
       const adapter = getAdapter(target(p));
       const result = await adapter.compile(outfit, path, cwd);
 
@@ -216,11 +296,22 @@ const commands: Record<string, { summary: string; run: (p: Parsed) => Promise<vo
       writeFileSync(
         join(cwd, ".outfit", "applied.json"),
         JSON.stringify(
-          { name: outfit.name, target: target(p), serverName: `outfit-${outfit.name}`, files: result.files },
+          {
+            name: outfit.name,
+            target: target(p),
+            serverName: `outfit-${outfit.name}`,
+            files: result.files,
+            created: snapshot.created,
+            prevDeny: snapshot.prevDeny,
+            prevAllow: snapshot.prevAllow,
+          },
           null,
           2
         ) + "\n"
       );
+      if (previous && previous !== outfit.name) {
+        console.log(C.dim(`  Replaced previously worn outfit ${previous}.`));
+      }
       console.log(C.green(`✓ Now wearing ${C.bold(outfit.name)} (${adapter.title}).`));
       for (const n of result.notes) console.log(C.dim(`  ℹ ${n}`));
       console.log(C.yellow("  Native tools are denied until you restart - reload Claude Code now."));
@@ -231,46 +322,9 @@ const commands: Record<string, { summary: string; run: (p: Parsed) => Promise<vo
   doff: {
     summary: "Remove the currently worn outfit from this project",
     run() {
-      const cwd = process.cwd();
-      const manifestPath = join(cwd, ".outfit", "applied.json");
-      if (!existsSync(manifestPath)) die("No outfit is currently worn here.");
-      const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-
-      for (const f of manifest.files as string[]) {
-        if (f.endsWith(".mcp.json") || f.endsWith("settings.json")) continue;
-        if (f.endsWith("CLAUDE.md")) {
-          if (!existsSync(f)) continue;
-          const stripped = removeBlock(readFileSync(f, "utf8"), personaMarkers(manifest.name));
-          if (stripped.trim()) writeFileSync(f, stripped);
-          else rmSync(f, { force: true });
-          continue;
-        }
-        try { rmSync(f, { force: true }); } catch {}
-      }
-
-      const mcpPath = join(cwd, ".mcp.json");
-      if (existsSync(mcpPath)) {
-        const mcp = JSON.parse(readFileSync(mcpPath, "utf8"));
-        if (mcp.mcpServers) delete mcp.mcpServers[manifest.serverName];
-        writeFileSync(mcpPath, JSON.stringify(mcp, null, 2) + "\n");
-      }
-
-      const settingsPath = join(cwd, ".claude", "settings.json");
-      if (existsSync(settingsPath)) {
-        const s = JSON.parse(readFileSync(settingsPath, "utf8"));
-        if (s.permissions) {
-          s.permissions.allow = (s.permissions.allow ?? []).filter(
-            (x: string) => x !== `mcp__${manifest.serverName}__*`
-          );
-          s.permissions.deny = (s.permissions.deny ?? []).filter(
-            (x: string) => !NATIVE_TOOLS.includes(x)
-          );
-        }
-        writeFileSync(settingsPath, JSON.stringify(s, null, 2) + "\n");
-      }
-
-      rmSync(manifestPath, { force: true });
-      console.log(C.green(`✓ Removed outfit ${C.bold(manifest.name)}. Native tools restored.`));
+      const removed = removeWorn(process.cwd());
+      if (!removed) die("No outfit is currently worn here.");
+      console.log(C.green(`✓ Removed outfit ${C.bold(removed)}. Native tools restored.`));
       console.log(C.dim("  Restart Claude Code to pick up the change."));
     },
   },
@@ -398,11 +452,13 @@ function help(): void {
   }
   console.log();
   console.log(C.bold("Options:"));
-  console.log(`  ${C.cyan("-t, --target")}  Compile target (default: claude-code)`);
-  console.log(`  ${C.cyan("-o, --out")}     Output directory for compile`);
-  console.log(`  ${C.cyan("    --json")}    Machine-readable output where supported`);
-  console.log(`  ${C.cyan("    --force")}   Override safety guards`);
-  console.log(`  ${C.cyan("-h, --help")}    Show this help`);
+  console.log(`  ${C.cyan("-t, --target")}   Compile target (default: claude-code)`);
+  console.log(`  ${C.cyan("-o, --out")}      Output directory for compile`);
+  console.log(`  ${C.cyan("    --outfit")}   Outfit file for the gateway command`);
+  console.log(`  ${C.cyan("    --json")}     Machine-readable output where supported`);
+  console.log(`  ${C.cyan("    --force")}    Override safety guards`);
+  console.log(`  ${C.cyan("-h, --help")}     Show this help`);
+  console.log(`  ${C.cyan("-v, --version")}  Print the version`);
   console.log();
 }
 
@@ -411,10 +467,12 @@ async function main(): Promise<void> {
   if (!argv.length || argv[0] === "help") return help();
 
   const parsed = parse(argv);
-  if (parsed.values.version) return void console.log(VERSION);
-
   const name = parsed.positionals.shift();
-  if (!name || parsed.values.help) return help();
+  if (!name) {
+    if (parsed.values.version) return void console.log(VERSION);
+    return help();
+  }
+  if (parsed.values.help) return help();
 
   const cmd = commands[name];
   if (!cmd) {

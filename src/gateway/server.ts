@@ -7,7 +7,7 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { Outfit, ONTOLOGY, capabilityToToolName } from "../spec/index.js";
-import { HANDLERS } from "./capabilities.js";
+import { HANDLERS, sanitizedEnv } from "./capabilities.js";
 
 function log(msg: string) {
   process.stderr.write(`[outfit-gateway] ${msg}\n`);
@@ -58,7 +58,7 @@ export async function runGateway(outfit: Outfit): Promise<void> {
       const transport = new StdioClientTransport({
         command: integ.command,
         args: integ.args,
-        env: { ...process.env, ...integ.env } as Record<string, string>,
+        env: sanitizedEnv(integ.env),
       });
       await client.connect(transport);
       clients.push(client);
