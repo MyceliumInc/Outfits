@@ -24,18 +24,18 @@ scope-checked, and native tools are denied. So "read-only reviewer" means it
   agent ── "please don't edit files" (prompt)       agent  (sees only the gateway)
     │                                                  │
     ▼                                                  ▼
-  [ native tools: Edit, Bash, Write, ... ]      ┌──────────────────────────────┐
+  [ native tools: Edit, Bash, Write, ... ]      ┌───────────────────────────────┐
     │        the agent can ignore the ask       │       OUTFIT GATEWAY          │
     ▼                                           │  an MCP server that IS the    │
   filesystem / shell / network  ◄── oops        │  agent's whole tool-world     │
-                                                ├──────────────────────────────┤
+                                                ├───────────────────────────────┤
                                                 │  every call is scope-checked  │
                                                 │   fs.read    paths: **/*    ✓ │
                                                 │   fs.write   not granted    ✗ │
                                                 │   shell.exec allow: git diff* │
                                                 │              deny:  git push* │
                                                 │   http.fetch domains:*.sec.gov│
-                                                └───────────────┬──────────────┘
+                                                └───────────────┬───────────────┘
                                                                 ▼
                                        native tools DENIED · only permitted calls pass
 ```
