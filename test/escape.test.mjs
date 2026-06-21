@@ -29,6 +29,22 @@ test("fs target via a dangling symlink is blocked", () => {
   }
 });
 
+test("a chain of symlinks cannot escape the allow-list", () => {
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), "outfit-chain-")));
+  const outside = realpathSync(mkdtempSync(join(tmpdir(), "outfit-chainout-")));
+  try {
+    symlinkSync(join(dir, "inner"), join(dir, "door"));
+    symlinkSync(outside, join(dir, "inner"));
+    assert.throws(
+      () => assertPathAllowed(join(dir, "door", "secret"), { paths: [join(dir, "**")] }),
+      ScopeViolation
+    );
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+    rmSync(outside, { recursive: true, force: true });
+  }
+});
+
 test("an explicit absolute allow-list still works", () => {
   const dir = realpathSync(mkdtempSync(join(tmpdir(), "outfit-abs-")));
   try {

@@ -27,6 +27,15 @@
       "source": "examples/repo-researcher.outfit.yaml",
       "capabilities": ["shell.exec", "fs.read", "fs.list", "web.search"],
       "portable": true
+    },
+    {
+      "name": "notes-keeper",
+      "description": "Keeps project notes through a sandboxed filesystem MCP integration.",
+      "version": "0.1.0",
+      "author": "outfit",
+      "source": "examples/notes-keeper.outfit.yaml",
+      "capabilities": [],
+      "portable": false
     }
   ]
 }

@@ -86,6 +86,9 @@ export async function buildGatewayServer(outfit: Outfit): Promise<GatewayServer>
       const msg = `integration "${integ.id}" failed to launch: ${err.message}`;
       if (integ.enforcement === "hard") {
         log(`FATAL: ${msg}`);
+        for (const c of clients) {
+          try { await c.close(); } catch {}
+        }
         throw new Error(msg);
       }
       log(`WARN: ${msg}`);

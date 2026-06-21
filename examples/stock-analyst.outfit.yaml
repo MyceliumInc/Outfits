@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../schema/outfit.schema.json
 apiVersion: outfit/v1
 name: stock-analyst
 description: Buy-side equity analyst - fundamentals, valuation, and news synthesis.

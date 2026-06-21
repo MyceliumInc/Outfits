@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../schema/outfit.schema.json
 apiVersion: outfit/v1
 name: repo-researcher
 description: Explores a codebase and answers architecture questions with citations.

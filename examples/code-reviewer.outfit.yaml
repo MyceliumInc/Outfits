@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../schema/outfit.schema.json
 apiVersion: outfit/v1
 name: code-reviewer
 description: Read-only code reviewer - inspects the diff, never edits.

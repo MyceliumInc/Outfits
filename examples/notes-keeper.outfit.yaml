@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=../schema/outfit.schema.json
+apiVersion: outfit/v1
+name: notes-keeper
+description: Keeps project notes through a sandboxed filesystem MCP integration.
+version: 0.1.0
+author: outfit
+
+identity:
+  prompt: |
+    You manage a small notes directory for this project. You read and write notes
+    through the filesystem integration, but only inside the notes folder. You keep
+    entries short, dated, and well organized.
+
+capabilities: []
+
+skills: []
+
+integrations:
+  - id: notes-fs
+    kind: mcp
+    enforcement: soft
+    command: npx
+    args: ["-y", "@modelcontextprotocol/server-filesystem", "./notes"]
+    allowTools:
+      - read_file
+      - write_file
+      - list_directory
+    install: "npx -y @modelcontextprotocol/server-filesystem"
+
+extensions: {}

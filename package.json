@@ -9,6 +9,9 @@
   },
   "homepage": "https://github.com/MyceliumInc/Outfits#readme",
   "bugs": "https://github.com/MyceliumInc/Outfits/issues",
+  "publishConfig": {
+    "provenance": true
+  },
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -35,7 +38,7 @@
     "build": "tsc",
     "postbuild": "chmod +x dist/cli/index.js",
     "dev": "tsc -w",
-    "test": "node --test",
+    "test": "node --test \"test/*.test.mjs\"",
     "pretest": "npm run build",
     "prepublishOnly": "npm run build"
   },

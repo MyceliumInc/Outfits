@@ -342,26 +342,25 @@ const commands: Record<string, Command> = {
       const previous = removeWorn(cwd);
       const snapshot = snapshotState(cwd);
       const adapter = getAdapter(target(p));
+      const manifestPath = join(cwd, ".outfit", "applied.json");
+      const manifest: Record<string, unknown> = {
+        name: outfit.name,
+        target: target(p),
+        serverName: `outfit-${outfit.name}`,
+        files: [],
+        created: snapshot.created,
+        prevDeny: snapshot.prevDeny,
+        prevAllow: snapshot.prevAllow,
+        settingsKnown: snapshot.settingsKnown,
+      };
+      const writeManifest = () => {
+        mkdirSync(join(cwd, ".outfit"), { recursive: true });
+        writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
+      };
+      writeManifest();
       const result = await adapter.compile(outfit, path, cwd);
-
-      mkdirSync(join(cwd, ".outfit"), { recursive: true });
-      writeFileSync(
-        join(cwd, ".outfit", "applied.json"),
-        JSON.stringify(
-          {
-            name: outfit.name,
-            target: target(p),
-            serverName: `outfit-${outfit.name}`,
-            files: result.files,
-            created: snapshot.created,
-            prevDeny: snapshot.prevDeny,
-            prevAllow: snapshot.prevAllow,
-            settingsKnown: snapshot.settingsKnown,
-          },
-          null,
-          2
-        ) + "\n"
-      );
+      manifest.files = result.files;
+      writeManifest();
       if (previous && previous !== outfit.name) {
         console.log(C.dim(`  Replaced previously worn outfit ${previous}.`));
       }
@@ -482,7 +481,8 @@ const commands: Record<string, Command> = {
 };
 
 function scaffold(name: string): string {
-  return `apiVersion: outfit/v1
+  return `# yaml-language-server: $schema=https://outfit.dev/schema/outfit.schema.json
+apiVersion: outfit/v1
 name: ${name}
 description: Describe what this agent is for.
 version: 0.1.0

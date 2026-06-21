@@ -65,17 +65,22 @@ function isWithin(target: string, root: string): boolean {
   return target === root || target.startsWith(root.endsWith(sep) ? root : root + sep);
 }
 
+const MAX_SYMLINK_HOPS = 40;
+
 function canonicalTarget(abs: string): string {
   const { root } = parse(abs);
   let cur = root;
-  for (const segment of abs.slice(root.length).split(sep).filter(Boolean)) {
+  outer: for (const segment of abs.slice(root.length).split(sep).filter(Boolean)) {
     cur = join(cur, segment);
-    try {
-      if (lstatSync(cur).isSymbolicLink()) {
-        cur = resolve(dirname(cur), readlinkSync(cur));
+    for (let hop = 0; hop < MAX_SYMLINK_HOPS; hop++) {
+      let stat;
+      try {
+        stat = lstatSync(cur);
+      } catch {
+        break outer;
       }
-    } catch {
-      break;
+      if (!stat.isSymbolicLink()) break;
+      cur = resolve(dirname(cur), readlinkSync(cur));
     }
   }
   return cur;
