@@ -96,6 +96,34 @@ test("web.search reports a clear error when no provider is configured", async ()
   }
 });
 
+test("web.search formats tavily results when configured", async () => {
+  const prevProvider = process.env.OUTFIT_SEARCH_PROVIDER;
+  const prevKey = process.env.OUTFIT_SEARCH_API_KEY;
+  const realFetch = globalThis.fetch;
+  process.env.OUTFIT_SEARCH_PROVIDER = "tavily";
+  process.env.OUTFIT_SEARCH_API_KEY = "test-key";
+  let calledUrl = "";
+  globalThis.fetch = async (url) => {
+    calledUrl = String(url);
+    return new Response(
+      JSON.stringify({ results: [{ title: "Outfit", url: "https://x", content: "personas" }] }),
+      { status: 200, headers: { "content-type": "application/json" } }
+    );
+  };
+  try {
+    const out = await HANDLERS["web.search"]({ query: "outfit" }, {});
+    assert.match(calledUrl, /api\.tavily\.com\/search/);
+    assert.match(out, /1\. Outfit/);
+    assert.match(out, /personas/);
+  } finally {
+    globalThis.fetch = realFetch;
+    if (prevProvider !== undefined) process.env.OUTFIT_SEARCH_PROVIDER = prevProvider;
+    else delete process.env.OUTFIT_SEARCH_PROVIDER;
+    if (prevKey !== undefined) process.env.OUTFIT_SEARCH_API_KEY = prevKey;
+    else delete process.env.OUTFIT_SEARCH_API_KEY;
+  }
+});
+
 test("sanitizedEnv strips secrets and OUTFIT_ vars but keeps PATH", () => {
   process.env.OUTFIT_SEARCH_API_KEY = "secret";
   process.env.MY_SERVICE_TOKEN = "t";

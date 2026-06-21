@@ -1,8 +1,9 @@
 {
-  "name": "outfit",
+  "name": "@myceliuminc/outfit",
   "version": "0.1.0",
   "description": "Portable, enforced agent personas. One spec - any runtime.",
   "license": "MIT",
+  "author": "MyceliumInc",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/MyceliumInc/Outfits.git"
@@ -10,6 +11,7 @@
   "homepage": "https://github.com/MyceliumInc/Outfits#readme",
   "bugs": "https://github.com/MyceliumInc/Outfits/issues",
   "publishConfig": {
+    "access": "public",
     "provenance": true
   },
   "type": "module",
@@ -28,7 +30,6 @@
   "files": [
     "dist",
     "examples",
-    "registry",
     "schema",
     "templates",
     "README.md",

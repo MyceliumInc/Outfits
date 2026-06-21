@@ -1,7 +1,6 @@
 # Outfit
 
 [![CI](https://github.com/MyceliumInc/Outfits/actions/workflows/ci.yml/badge.svg)](https://github.com/MyceliumInc/Outfits/actions/workflows/ci.yml)
-[![npm version](https://img.shields.io/npm/v/outfit.svg)](https://www.npmjs.com/package/outfit)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
@@ -50,9 +49,16 @@ scope-checked, and native tools are denied. So "read-only reviewer" means it
 
 ## Quickstart
 
-```bash
-npm install -g outfit
+Install from source (not yet published to npm):
 
+```bash
+git clone https://github.com/MyceliumInc/Outfits && cd Outfits
+npm install && npm run build && npm link
+```
+
+Then:
+
+```bash
 outfit doctor code-reviewer     # can this runtime actually enforce it?
 outfit use code-reviewer        # wear it in the current project
 # reload Claude Code
@@ -186,6 +192,8 @@ Outfit raises the floor; it is not a sandbox.
 | Command | What it does |
 | ------- | ------------ |
 | `outfit list [--json]` | Discover outfits across search paths |
+| `outfit add <url\|github:..\|name>` | Fetch and install an outfit |
+| `outfit remove <name>` | Remove an installed outfit |
 | `outfit init <name>` | Scaffold a new outfit in `./outfits` |
 | `outfit validate <ref> [--json]` | Schema + ontology validation |
 | `outfit doctor <ref> [-t target] [--json]` | Preflight: can the target enforce it? |
@@ -221,7 +229,10 @@ The `use` / `doff` lifecycle is CLI-only.
 | Target | gateway | deny-native | hooks | slash | integrations |
 | ------ | :-----: | :---------: | :---: | :---: | :----------: |
 | `claude-code` | yes | yes | yes | yes | yes |
-| `openai-agents` | yes | yes (by omission) | no | no | yes |
+| `openai-agents` (experimental) | yes | yes (by omission) | no | no | yes |
+
+The `openai-agents` adapter emits an agent script; verify it against your installed
+`@openai/agents` version.
 
 ## Reference
 

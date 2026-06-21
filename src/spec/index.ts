@@ -64,6 +64,15 @@ export function validateSemantics(outfit: Outfit): ValidationIssue[] {
     }
   }
 
+  for (const skill of outfit.skills ?? []) {
+    if (skill.source && !skill.inline) {
+      issues.push({
+        level: "warning",
+        message: `Skill "${skill.id}" has a source but external skill fetching is not implemented yet; only inline skills are compiled.`,
+      });
+    }
+  }
+
   if (outfit.integrations.length > 0) {
     issues.push({
       level: "warning",

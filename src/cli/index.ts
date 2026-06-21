@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-import { mkdirSync, writeFileSync, readFileSync, existsSync, rmSync, readdirSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync, existsSync, rmSync, readdirSync, renameSync } from "node:fs";
 import { join, resolve, relative, dirname } from "node:path";
+import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import {
@@ -91,6 +92,54 @@ function printIssues(issues: ValidationIssue[]): void {
 
 function readTemplate(name: string): string {
   return readFileSync(fileURLToPath(new URL(`../../templates/${name}`, import.meta.url)), "utf8");
+}
+
+const RAW_BASE = "https://raw.githubusercontent.com/MyceliumInc/Outfits/HEAD/";
+const REGISTRY_URL = RAW_BASE + "registry/index.json";
+
+function userOutfitsDir(): string {
+  return join(homedir(), ".outfit", "outfits");
+}
+
+async function fetchText(url: string): Promise<string> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Fetch failed (${res.status}) for ${url}`);
+  return res.text();
+}
+
+async function resolveRef(ref: string): Promise<string> {
+  if (/^https?:\/\//.test(ref)) return ref;
+  const gh = ref.match(/^github:([^/]+)\/([^/]+)\/(.+)$/);
+  if (gh) return `https://raw.githubusercontent.com/${gh[1]}/${gh[2]}/HEAD/${gh[3]}`;
+  const index = JSON.parse(await fetchText(REGISTRY_URL));
+  const entry = (index.outfits ?? []).find((o: any) => o.name === ref);
+  if (!entry) die(`No outfit named "${ref}" in the registry. Pass a URL or github:user/repo/path instead.`);
+  return /^https?:\/\//.test(entry.source) ? entry.source : RAW_BASE + entry.source;
+}
+
+async function addOutfit(ref: string): Promise<{ name: string; dest: string }> {
+  const text = await fetchText(await resolveRef(ref));
+  const dir = userOutfitsDir();
+  mkdirSync(dir, { recursive: true });
+  const tmp = join(dir, ".incoming.outfit.yaml");
+  writeFileSync(tmp, text);
+  let loaded;
+  try {
+    loaded = loadOutfit(tmp);
+  } catch (err) {
+    rmSync(tmp, { force: true });
+    throw err;
+  }
+  const errors = validateSemantics(loaded.outfit).filter((i) => i.level === "error");
+  if (errors.length) {
+    rmSync(tmp, { force: true });
+    printIssues(errors);
+    die("Refusing to add an invalid outfit.");
+  }
+  const dest = join(dir, `${loaded.outfit.name}.outfit.yaml`);
+  rmSync(dest, { force: true });
+  renameSync(tmp, dest);
+  return { name: loaded.outfit.name, dest };
 }
 
 function pruneDirIfEmpty(dir: string): void {
@@ -227,6 +276,30 @@ const commands: Record<string, Command> = {
         console.log(C.dim(`    ${f.path}`));
       }
       console.log();
+    },
+  },
+
+  add: {
+    summary: "Fetch and install an outfit from a URL, github ref, or the registry",
+    usage: "outfit add <url | github:user/repo/path | name>",
+    async run(p) {
+      const ref = p.positionals[0] ?? die("Usage: outfit add <url | github:user/repo/path | name>");
+      const { name, dest } = await addOutfit(ref);
+      console.log(C.green(`✓ Added ${C.bold(name)}`));
+      console.log(C.dim(`  ${dest}`));
+      console.log(C.dim(`  Wear it with: outfit use ${name}`));
+    },
+  },
+
+  remove: {
+    summary: "Remove an installed outfit from ~/.outfit/outfits",
+    usage: "outfit remove <name>",
+    run(p) {
+      const name = p.positionals[0] ?? die("Usage: outfit remove <name>");
+      const file = join(userOutfitsDir(), `${name}.outfit.yaml`);
+      if (!existsSync(file)) die(`No installed outfit named "${name}".`);
+      rmSync(file, { force: true });
+      console.log(C.green(`✓ Removed ${name}`));
     },
   },
 
@@ -466,7 +539,8 @@ const commands: Record<string, Command> = {
       }
       console.log(C.bold("\nTargets:\n"));
       for (const a of Object.values(ADAPTERS)) {
-        console.log(`  ${C.cyan(a.id)} - ${a.title}`);
+        const tag = a.experimental ? C.yellow(" (experimental)") : "";
+        console.log(`  ${C.cyan(a.id)} - ${a.title}${tag}`);
         const c = a.conformance;
         const yn = (b: boolean) => (b ? C.green("yes") : C.dim("no "));
         console.log(

@@ -1,5 +1,6 @@
 import { resolve, relative, dirname, join, parse, sep } from "node:path";
 import { existsSync, realpathSync, lstatSync, readlinkSync } from "node:fs";
+import { isIP } from "node:net";
 import { minimatch } from "minimatch";
 
 export class ScopeViolation extends Error {
@@ -69,15 +70,17 @@ const MAX_SYMLINK_HOPS = 40;
 
 function canonicalTarget(abs: string): string {
   const { root } = parse(abs);
+  const segments = abs.slice(root.length).split(sep).filter(Boolean);
   let cur = root;
-  outer: for (const segment of abs.slice(root.length).split(sep).filter(Boolean)) {
-    cur = join(cur, segment);
+  for (let i = 0; i < segments.length; i++) {
+    cur = join(cur, segments[i]);
     for (let hop = 0; hop < MAX_SYMLINK_HOPS; hop++) {
       let stat;
       try {
         stat = lstatSync(cur);
       } catch {
-        break outer;
+        const rest = segments.slice(i + 1);
+        return rest.length ? join(cur, ...rest) : cur;
       }
       if (!stat.isSymbolicLink()) break;
       cur = resolve(dirname(cur), readlinkSync(cur));
@@ -129,6 +132,26 @@ function domainMatches(host: string, pattern: string): boolean {
   return host === pattern;
 }
 
+function isInternalHost(host: string): boolean {
+  const h = host.toLowerCase();
+  if (h === "localhost") return true;
+  const version = isIP(h);
+  if (version === 4) {
+    const [a, b] = h.split(".").map(Number);
+    return (
+      a === 0 || a === 127 || a === 10 ||
+      (a === 169 && b === 254) ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168) ||
+      (a === 100 && b >= 64 && b <= 127)
+    );
+  }
+  if (version === 6) {
+    return h === "::1" || h.startsWith("fe80") || h.startsWith("fc") || h.startsWith("fd") || h.startsWith("::ffff:");
+  }
+  return false;
+}
+
 export function assertUrlAllowed(url: string, scope: Record<string, unknown>): URL {
   const domains = Array.isArray(scope.domains) ? (scope.domains as string[]) : [];
   let parsed: URL;
@@ -143,6 +166,11 @@ export function assertUrlAllowed(url: string, scope: Record<string, unknown>): U
   if (!domains.length || !domains.some((d) => domainMatches(parsed.hostname, d))) {
     throw new ScopeViolation(
       `Host "${parsed.hostname}" not permitted by this outfit's domain allow-list.`
+    );
+  }
+  if (isInternalHost(parsed.hostname) && !domains.includes(parsed.hostname)) {
+    throw new ScopeViolation(
+      `Host "${parsed.hostname}" is internal/link-local; allow it explicitly (not via a wildcard) to permit it.`
     );
   }
   return parsed;

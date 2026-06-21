@@ -3,48 +3,37 @@
 All notable changes to this project are documented here. The format is based on
 Keep a Changelog, and this project adheres to semantic versioning.
 
-## [Unreleased]
+## [0.1.0] - 2026-06-21
 
-### Security
-- `fs.*` confines every path to an allowed root, so a broad glob like `**/*` can
-  no longer satisfy an absolute path such as `/etc/passwd`.
-- Path canonicalization resolves symlinks per segment, including a dangling final
-  component, closing the `fs.write` symlink-escape; the canonical path is returned.
-- Subprocess environments use a small allow-list instead of a leaky keyword denylist.
+Initial release: a spec, an enforcing MCP gateway, Claude Code and OpenAI Agents
+adapters, and the `outfit` CLI and library.
 
-### Changed
-- Removed the no-op `enforcement` field from capabilities (kept on integrations,
-  where it controls fatal-vs-warn on launch failure).
-- `doctor` reports per-capability runtime prerequisites (e.g. `web.search` env).
-- Scope validation is driven by a single `SCOPE_KINDS` registry.
+### Capabilities and enforcement
+- Portable capability ontology (`shell.exec`, `fs.read`, `fs.write`, `fs.list`,
+  `http.fetch`, `web.search`) implemented and scope-checked by the gateway.
+- `shell.exec` rejects shell operators (`;`, `&`, `|`, backtick, `<`, `>`, `$(`, `${`)
+  so an allow-listed wildcard cannot chain another command.
+- `fs.*` confines paths to an allowed root (a broad glob like `**/*` cannot reach
+  `/etc/passwd`) and resolves symlinks to a fixed point, blocking single and chained
+  symlink escapes; the canonical path is used.
+- `http.fetch` restricts schemes to http/https, matches domains exactly or by
+  dot-bounded suffix, re-validates every redirect hop, and blocks internal and
+  link-local hosts unless explicitly allow-listed.
+- Shell and integration subprocesses run with an allow-listed environment so secrets
+  are not passed through.
+- Adapters lock the runtime to the gateway and deny native tools.
 
-### Added
-- Per-command help (`outfit <cmd> --help`) and `--json` output for `doctor`,
-  `validate`, and `targets`; clean errors for unknown flags.
-- `buildGatewayServer` is exported for embedding and testing the gateway.
-
-### Security (initial hardening)
-- `shell.exec` now rejects shell operators (`;`, `&`, `|`, backtick, `<`, `>`,
-  `$(`, `${`) so an allow-listed wildcard can no longer authorize command chaining.
-- `http.fetch` follows redirects manually and re-checks every hop against the
-  domain allow-list, and rejects non-http(s) schemes (SSRF hardening).
-- `fs.*` paths are canonicalized so a symlink cannot escape the allow-list.
-- Domain matching is exact or dot-bounded suffix only (no substring wildcards).
-- Shell and integration subprocesses run with a sanitized environment that omits
-  secrets (`*KEY*`, `*TOKEN*`, `*SECRET*`, `OUTFIT_*`).
-- The Claude Code native-tool deny-list covers more built-ins.
-
-### Fixed
-- `outfit use` auto-removes a previously worn outfit instead of orphaning it.
-- `outfit doff` restores the project's prior permissions exactly and deletes the
-  files and skill directories it created.
-- `removeBlock` no longer leaves a doubled trailing newline.
-
-### Added
-- `outfit status` reports the worn outfit; `outfit install-skill` installs the
-  `create-outfit` skill.
-- Public library API (`import { ... } from "outfit"`) with type declarations.
-
-## [0.1.0]
-
-- Initial release: spec, gateway, Claude Code and OpenAI Agents adapters, CLI.
+### CLI and library
+- `list`, `add`, `remove`, `init`, `validate`, `doctor`, `compile`, `use`, `status`,
+  `doff`, `gateway`, `targets`, `install-command`, `install-skill`.
+- `outfit add` fetches and installs an outfit from a URL, a `github:` ref, or the
+  registry into `~/.outfit/outfits`.
+- Per-command help (`outfit <cmd> --help`), `--json` for `doctor`/`validate`/`targets`,
+  and clean errors for unknown flags or commands.
+- `doctor` reports adapter conformance and per-capability runtime prerequisites.
+- Personas clothe the main session via `CLAUDE.md`; `use`/`doff` snapshot and restore
+  the project's prior state exactly.
+- Strict schema validation (unknown keys are rejected, not silently dropped).
+- Typed ESM library API (`loadOutfit`, `validateSemantics`, `doctor`, `runGateway`,
+  `buildGatewayServer`, scope enforcers, adapter registry) with declarations.
+- The `openai-agents` target is marked experimental.

@@ -17,5 +17,6 @@ export interface Adapter {
   id: string;
   title: string;
   conformance: Conformance;
+  experimental?: boolean;
   compile(outfit: Outfit, outfitPath: string, outDir: string): Promise<CompileResult>;
 }

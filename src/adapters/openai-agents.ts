@@ -6,6 +6,7 @@ import type { Adapter, CompileResult } from "./types.js";
 export const openaiAgentsAdapter: Adapter = {
   id: "openai-agents",
   title: "OpenAI Agents SDK",
+  experimental: true,
   conformance: {
     routeViaGateway: true,
     denyNative: true,

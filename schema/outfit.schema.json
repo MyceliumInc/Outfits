@@ -14,6 +14,7 @@
     "identity": {
       "type": "object",
       "required": ["prompt"],
+      "additionalProperties": false,
       "properties": {
         "prompt": { "type": "string" },
         "model": { "type": "string" }
@@ -24,6 +25,7 @@
       "items": {
         "type": "object",
         "required": ["id"],
+        "additionalProperties": false,
         "properties": {
           "id": { "type": "string" },
           "scope": { "type": "object" }
@@ -35,6 +37,7 @@
       "items": {
         "type": "object",
         "required": ["id"],
+        "additionalProperties": false,
         "properties": {
           "id": { "type": "string" },
           "source": { "type": "string" },
@@ -48,6 +51,7 @@
       "items": {
         "type": "object",
         "required": ["id"],
+        "additionalProperties": false,
         "properties": {
           "id": { "type": "string" },
           "kind": { "const": "mcp" },

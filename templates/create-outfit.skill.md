@@ -59,28 +59,21 @@ deny: an empty scope denies everything.
 | `http.fetch` | `domains`: hostname globs                |
 | `web.search` | `domains`: hostname globs (+ provider)   |
 
-Each capability also takes `enforcement: hard | soft` (default `hard`). Hard
-means the target runtime must be able to guarantee it or `outfit doctor` fails.
-
 Scope examples:
 
 ```yaml
 capabilities:
   - id: shell.exec
-    enforcement: hard
     scope:
       allow: ["git diff*", "git log*", "rg *", "ls *"]
       deny:  ["git push*", "rm *"]
   - id: fs.read
-    enforcement: hard
     scope:
       paths: ["**/*"]
   - id: fs.write
-    enforcement: hard
     scope:
       paths: ["reports/**"]
   - id: http.fetch
-    enforcement: hard
     scope:
       domains: ["*.sec.gov", "api.github.com"]
 ```
