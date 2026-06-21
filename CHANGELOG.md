@@ -3,6 +3,14 @@
 All notable changes to this project are documented here. The format is based on
 Keep a Changelog, and this project adheres to semantic versioning.
 
+## [0.1.1] - 2026-06-21
+
+Documentation and packaging fixes for the public release.
+
+- README quickstart installs from npm (`npm install -g @myceliuminc/outfit`).
+- `schema/outfit.schema.json` `$id` points at the canonical published URL.
+- Security reports go through GitHub private advisories.
+
 ## [0.1.0] - 2026-06-21
 
 Initial release: a spec, an enforcing MCP gateway, Claude Code and OpenAI Agents
