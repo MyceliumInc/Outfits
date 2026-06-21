@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Outfit Registry</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { font: 16px/1.5 ui-sans-serif, system-ui, sans-serif; max-width: 760px;
+      margin: 0 auto; padding: 3rem 1.25rem; background: #0b0d10; color: #e6e9ef; }
+    h1 { font-size: 2rem; margin-bottom: .25rem; }
+    .tag { color: #8b93a7; }
+    input { width: 100%; padding: .6rem .8rem; margin: 1.5rem 0; border-radius: 10px;
+      border: 1px solid #232733; background: #12151b; color: inherit; font-size: 1rem; }
+    .card { border: 1px solid #232733; border-radius: 12px; padding: 1rem 1.1rem;
+      margin-bottom: .8rem; background: #11141a; }
+    .card h2 { font-size: 1.15rem; margin: 0 0 .2rem; }
+    .card p { margin: .2rem 0 .6rem; color: #b9c0cf; }
+    .caps { display: flex; flex-wrap: wrap; gap: .35rem; }
+    .caps span { font: 12px ui-monospace, monospace; background: #1b2230; color: #9fd0ff;
+      padding: .15rem .45rem; border-radius: 6px; }
+    code { background: #1b2230; padding: .15rem .4rem; border-radius: 6px;
+      font: 13px ui-monospace, monospace; }
+    .install { margin-top: .7rem; color: #8b93a7; font-size: .9rem; }
+    a { color: #9fd0ff; }
+    .portable { color: #6ee7a8; }
+  </style>
+</head>
+<body>
+  <h1>Outfit Registry</h1>
+  <p class="tag">Portable, enforced agent personas. One spec — any runtime.</p>
+  <input id="q" placeholder="Search outfits…" />
+  <div id="list"></div>
+
+  <script>
+    const list = document.getElementById('list');
+    const q = document.getElementById('q');
+    let data = [];
+
+    function render(filter = '') {
+      const f = filter.toLowerCase();
+      list.innerHTML = data
+        .filter(o => (o.name + ' ' + (o.description||'') + ' ' + (o.capabilities||[]).join(' ')).toLowerCase().includes(f))
+        .map(o => `
+          <div class="card">
+            <h2>${o.name} <span class="tag">v${o.version}</span>
+              ${o.portable ? '<span class="portable">● portable</span>' : ''}</h2>
+            <p>${o.description ?? ''}</p>
+            <div class="caps">${(o.capabilities||[]).map(c => `<span>${c}</span>`).join('')}</div>
+            <div class="install">Wear it: <code>outfit use ${o.name}</code></div>
+          </div>`).join('');
+    }
+
+    fetch('index.json').then(r => r.json()).then(j => { data = j.outfits || []; render(); });
+    q.addEventListener('input', () => render(q.value));
+  </script>
+</body>
+</html>

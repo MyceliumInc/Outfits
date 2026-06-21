@@ -1,0 +1,41 @@
+apiVersion: outfit/v1
+name: repo-researcher
+description: Explores a codebase and answers architecture questions with citations.
+version: 0.1.0
+author: outfit
+
+identity:
+  prompt: |
+    You are a codebase explorer. Given a question about this repository, you
+    locate the relevant code, read just enough of it, and answer with precise
+    file:line citations. You favor breadth-first search (ripgrep, find) before
+    deep reads. You can also consult the web for library docs. You never write
+    or modify files.
+
+capabilities:
+  - id: shell.exec
+    enforcement: hard
+    scope:
+      allow:
+        - "rg *"
+        - "grep *"
+        - "find *"
+        - "ls *"
+        - "git log*"
+        - "git grep*"
+  - id: fs.read
+    enforcement: hard
+    scope:
+      paths: ["**/*"]
+  - id: fs.list
+    enforcement: hard
+    scope:
+      paths: ["**/*"]
+  - id: web.search
+    enforcement: soft
+    scope:
+      domains: ["*"]
+
+skills: []
+integrations: []
+extensions: {}

@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://outfit.dev/schema/outfit.schema.json",
+  "title": "Outfit",
+  "type": "object",
+  "required": ["apiVersion", "name", "identity"],
+  "additionalProperties": false,
+  "properties": {
+    "apiVersion": { "const": "outfit/v1" },
+    "name": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+    "description": { "type": "string" },
+    "version": { "type": "string" },
+    "author": { "type": "string" },
+    "identity": {
+      "type": "object",
+      "required": ["prompt"],
+      "properties": {
+        "prompt": { "type": "string" },
+        "model": { "type": "string" }
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": { "type": "string" },
+          "enforcement": { "enum": ["hard", "soft"] },
+          "scope": { "type": "object" }
+        }
+      }
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": { "type": "string" },
+          "source": { "type": "string" },
+          "inline": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      }
+    },
+    "integrations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": { "type": "string" },
+          "kind": { "const": "mcp" },
+          "enforcement": { "enum": ["hard", "soft"] },
+          "command": { "type": "string" },
+          "args": { "type": "array", "items": { "type": "string" } },
+          "env": { "type": "object" },
+          "allowTools": { "type": "array", "items": { "type": "string" } },
+          "install": { "type": "string" }
+        }
+      }
+    },
+    "extensions": { "type": "object" }
+  }
+}
