@@ -133,7 +133,7 @@ function domainMatches(host: string, pattern: string): boolean {
 }
 
 function isInternalHost(host: string): boolean {
-  const h = host.toLowerCase();
+  const h = host.toLowerCase().replace(/^\[|\]$/g, "");
   if (h === "localhost") return true;
   const version = isIP(h);
   if (version === 4) {

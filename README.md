@@ -126,7 +126,7 @@ capabilities:
     scope: { paths: ["**/*"] }
 ```
 
-Add `# yaml-language-server: $schema=https://outfit.dev/schema/outfit.schema.json` as
+Add `# yaml-language-server: $schema=https://raw.githubusercontent.com/MyceliumInc/Outfits/HEAD/schema/outfit.schema.json` as
 the first line of your outfit for editor validation. See [`examples/`](examples/) for
 more, including `stock-analyst` (web + scoped writes) and `notes-keeper` (an integration).
 
@@ -212,7 +212,7 @@ Run `outfit <command> --help` for per-command usage.
 The spec, gateway, doctor, and adapters are available as a typed ESM library:
 
 ```ts
-import { loadOutfit, validateSemantics, doctor, runGateway, ONTOLOGY } from "outfit";
+import { loadOutfit, validateSemantics, doctor, runGateway, ONTOLOGY } from "@myceliuminc/outfit";
 
 const { outfit } = loadOutfit("outfits/code-reviewer.outfit.yaml");
 if (doctor(outfit, "claude-code").ok) {

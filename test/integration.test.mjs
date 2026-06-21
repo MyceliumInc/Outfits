@@ -5,7 +5,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { buildGatewayServer } from "../dist/index.js";
 
-const FAKE = fileURLToPath(new URL("./fixtures/fake-mcp-server.mjs", import.meta.url));
+const FAKE = fileURLToPath(new URL("../test-fixtures/fake-mcp-server.mjs", import.meta.url));
 
 function outfitWith(allowTools) {
   return {

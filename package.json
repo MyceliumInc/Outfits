@@ -36,10 +36,12 @@
     "LICENSE"
   ],
   "scripts": {
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "prebuild": "npm run clean",
     "build": "tsc",
     "postbuild": "chmod +x dist/cli/index.js",
     "dev": "tsc -w",
-    "test": "node --test \"test/*.test.mjs\"",
+    "test": "node --test",
     "pretest": "npm run build",
     "prepublishOnly": "npm run build"
   },

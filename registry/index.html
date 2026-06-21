@@ -47,7 +47,7 @@
               ${o.portable ? '<span class="portable">● portable</span>' : ''}</h2>
             <p>${o.description ?? ''}</p>
             <div class="caps">${(o.capabilities||[]).map(c => `<span>${c}</span>`).join('')}</div>
-            <div class="install">Wear it: <code>outfit use ${o.name}</code></div>
+            <div class="install">Install: <code>outfit add ${o.name}</code> then <code>outfit use ${o.name}</code></div>
           </div>`).join('');
     }
 

@@ -49,3 +49,15 @@ test("internal and link-local hosts are blocked unless explicitly allow-listed",
   assert.throws(() => assertUrlAllowed("http://localhost/", { domains: ["*"] }), ScopeViolation);
   assert.doesNotThrow(() => assertUrlAllowed("http://127.0.0.1/", { domains: ["127.0.0.1"] }));
 });
+
+test("IPv6 internal literals are blocked even when bracketed", () => {
+  for (const url of ["http://[::1]/", "http://[fd00::1]/", "http://[fe80::1]/", "http://[::ffff:127.0.0.1]/"]) {
+    assert.throws(() => assertUrlAllowed(url, { domains: ["*"] }), ScopeViolation, url);
+  }
+});
+
+test("IPv4 disguised encodings are normalized and blocked", () => {
+  for (const url of ["http://0x7f000001/", "http://2130706433/", "http://0177.0.0.1/"]) {
+    assert.throws(() => assertUrlAllowed(url, { domains: ["*"] }), ScopeViolation, url);
+  }
+});

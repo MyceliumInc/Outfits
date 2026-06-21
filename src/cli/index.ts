@@ -74,7 +74,7 @@ function isOutfitDevRepo(dir: string): boolean {
     if (existsSync(pkgPath)) {
       try {
         const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
-        if (pkg.name === "outfit" && pkg.bin?.outfit) return true;
+        if ((pkg.name === "@myceliuminc/outfit" || pkg.name === "outfit") && pkg.bin?.outfit) return true;
       } catch {}
     }
     const parent = dirname(cur);
@@ -388,7 +388,10 @@ const commands: Record<string, Command> = {
       const outDir = resolve((p.values.out as string) ?? ".");
       const result = await adapter.compile(outfit, path, outDir);
       console.log(C.green(`✓ Compiled ${outfit.name} → ${adapter.title}`));
-      for (const f of result.files) console.log(C.dim(`  + ${relative(process.cwd(), f)}`));
+      for (const f of result.files) {
+        const rel = relative(process.cwd(), f);
+        console.log(C.dim(`  + ${rel.startsWith("..") ? f : rel}`));
+      }
       for (const n of result.notes) console.log(C.dim(`  ℹ ${n}`));
     },
   },
@@ -555,7 +558,7 @@ const commands: Record<string, Command> = {
 };
 
 function scaffold(name: string): string {
-  return `# yaml-language-server: $schema=https://outfit.dev/schema/outfit.schema.json
+  return `# yaml-language-server: $schema=https://raw.githubusercontent.com/MyceliumInc/Outfits/HEAD/schema/outfit.schema.json
 apiVersion: outfit/v1
 name: ${name}
 description: Describe what this agent is for.
