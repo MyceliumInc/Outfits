@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from "node:fs";
 import { join, resolve, relative, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import {
   loadOutfit,
@@ -80,6 +81,10 @@ function printIssues(issues: { level: string; message: string }[]): void {
     const tag = i.level === "error" ? C.red("error") : C.yellow("warn ");
     console.log(`  ${tag}  ${i.message}`);
   }
+}
+
+function readTemplate(name: string): string {
+  return readFileSync(fileURLToPath(new URL(`../../templates/${name}`, import.meta.url)), "utf8");
 }
 
 const commands: Record<string, { summary: string; run: (p: Parsed) => Promise<void> | void }> = {
@@ -193,7 +198,7 @@ const commands: Record<string, { summary: string; run: (p: Parsed) => Promise<vo
       const cwd = process.cwd();
       if (isOutfitDevRepo(cwd) && !p.values.force) {
         die(
-          "Refusing to wear an outfit inside the outfit source repo — it would deny the\n" +
+          "Refusing to wear an outfit inside the outfit source repo - it would deny the\n" +
             "  native tools you need to develop here, locking this session until `outfit doff`.\n" +
             "  Wear it in a separate project, or pass --force if you really mean to."
         );
@@ -202,7 +207,7 @@ const commands: Record<string, { summary: string; run: (p: Parsed) => Promise<vo
       const report = doctor(outfit, target(p));
       if (!report.ok) {
         printIssues(report.issues.filter((x) => x.level === "error"));
-        die("Cannot wear this outfit — see errors above.");
+        die("Cannot wear this outfit - see errors above.");
       }
       const adapter = getAdapter(target(p));
       const result = await adapter.compile(outfit, path, cwd);
@@ -218,7 +223,7 @@ const commands: Record<string, { summary: string; run: (p: Parsed) => Promise<vo
       );
       console.log(C.green(`✓ Now wearing ${C.bold(outfit.name)} (${adapter.title}).`));
       for (const n of result.notes) console.log(C.dim(`  ℹ ${n}`));
-      console.log(C.yellow("  Native tools are denied until you restart — reload Claude Code now."));
+      console.log(C.yellow("  Native tools are denied until you restart - reload Claude Code now."));
       console.log(C.dim("  Take it off any time with `outfit doff`."));
     },
   },
@@ -321,8 +326,20 @@ const commands: Record<string, { summary: string; run: (p: Parsed) => Promise<vo
       const dir = join(process.cwd(), ".claude", "commands");
       mkdirSync(dir, { recursive: true });
       const file = join(dir, "outfit.md");
-      writeFileSync(file, SLASH_COMMAND);
+      writeFileSync(file, readTemplate("outfit-picker.command.md"));
       console.log(C.green(`✓ Installed /outfit → ${relative(process.cwd(), file)}`));
+    },
+  },
+
+  "install-skill": {
+    summary: "Install the create-outfit skill into ./.claude/skills",
+    run() {
+      const dir = join(process.cwd(), ".claude", "skills", "create-outfit");
+      mkdirSync(dir, { recursive: true });
+      const file = join(dir, "SKILL.md");
+      writeFileSync(file, readTemplate("create-outfit.skill.md"));
+      console.log(C.green(`✓ Installed create-outfit skill → ${relative(process.cwd(), file)}`));
+      console.log(C.dim("  In Claude Code, ask it to \"make an outfit\" and the skill takes over."));
     },
   },
 
@@ -331,7 +348,7 @@ const commands: Record<string, { summary: string; run: (p: Parsed) => Promise<vo
     run() {
       console.log(C.bold("\nTargets:\n"));
       for (const a of Object.values(ADAPTERS)) {
-        console.log(`  ${C.cyan(a.id)} — ${a.title}`);
+        console.log(`  ${C.cyan(a.id)} - ${a.title}`);
         const c = a.conformance;
         const yn = (b: boolean) => (b ? C.green("yes") : C.dim("no "));
         console.log(
@@ -371,27 +388,8 @@ extensions: {}
 `;
 }
 
-const SLASH_COMMAND = `---
-description: Pick an Outfit (agent persona) to wear in this project
-allowed-tools: Bash(outfit *), Bash(npx outfit *)
----
-
-You are helping the user pick and wear an "Outfit" — a portable, enforced agent
-persona managed by the \`outfit\` CLI.
-
-Steps:
-1. Run \`outfit list --json\` to get the available outfits.
-2. Present them as a short numbered list (name — description).
-3. Ask the user which one they want to wear (or accept one passed as $ARGUMENTS).
-4. Run \`outfit doctor <name>\` to confirm it can be enforced here. Show any issues.
-5. If it passes, run \`outfit use <name>\` to wear it.
-6. Tell the user to reload so the new tool-world (MCP gateway) takes effect.
-
-If $ARGUMENTS names an outfit directly, skip straight to steps 4–6 for it.
-`;
-
 function help(): void {
-  console.log(C.bold("\noutfit") + C.dim(` v${VERSION} — portable, enforced agent personas.\n`));
+  console.log(C.bold("\noutfit") + C.dim(` v${VERSION} - portable, enforced agent personas.\n`));
   console.log("Usage: outfit <command> [options]\n");
   console.log(C.bold("Commands:"));
   const width = Math.max(...Object.keys(commands).map((k) => k.length));

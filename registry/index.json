@@ -4,7 +4,7 @@
   "outfits": [
     {
       "name": "stock-analyst",
-      "description": "Buy-side equity analyst — fundamentals, valuation, and news synthesis.",
+      "description": "Buy-side equity analyst - fundamentals, valuation, and news synthesis.",
       "version": "0.1.0",
       "author": "outfit",
       "source": "examples/stock-analyst.outfit.yaml",
@@ -13,7 +13,7 @@
     },
     {
       "name": "code-reviewer",
-      "description": "Read-only code reviewer — inspects the diff, never edits.",
+      "description": "Read-only code reviewer - inspects the diff, never edits.",
       "version": "0.1.0",
       "author": "outfit",
       "source": "examples/code-reviewer.outfit.yaml",

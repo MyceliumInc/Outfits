@@ -59,7 +59,7 @@ export function doctor(outfit: Outfit, target: string): DoctorReport {
   if (ext.hooks && !c.hooks) {
     issues.push({
       level: "warning",
-      message: `${adapter.title} does not support hooks — this extension will be skipped.`,
+      message: `${adapter.title} does not support hooks - this extension will be skipped.`,
     });
   }
 

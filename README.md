@@ -1,10 +1,10 @@
 # Outfit
 
-**Portable, enforced agent personas. One spec — any runtime.**
+**Portable, enforced agent personas. One spec - any runtime.**
 
 An **Outfit** is a single declarative file that describes an agent persona: who it
 is (prompt), what it can do (capabilities), the skills it wears, the integrations
-it needs — and a **requirements contract that is actually enforced**. Outfits are
+it needs - and a **requirements contract that is actually enforced**. Outfits are
 portable across runtimes (Claude Code, the OpenAI Agents SDK, …) and shareable via
 a registry.
 
@@ -19,10 +19,10 @@ Skills ─┘
 
 ## How enforcement works
 
-The trick is the **Outfit Gateway** — an MCP server that *is the agent's entire
+The trick is the **Outfit Gateway** - an MCP server that *is the agent's entire
 tool-world*:
 
-- **Capabilities** (the portable core — `shell.exec`, `fs.read`, `http.fetch`,
+- **Capabilities** (the portable core - `shell.exec`, `fs.read`, `http.fetch`,
   `web.search`, …) are implemented *by the gateway itself* and scope-checked on
   every call. Same behavior on every runtime.
 - **Integrations** (raw MCP servers) are launched as children and proxied through,
@@ -61,6 +61,15 @@ outfit install-command            # writes .claude/commands/outfit.md
 # then type /outfit in Claude Code to pick from a list
 ```
 
+To have Claude author a brand-new outfit for you, install the skill:
+
+```bash
+outfit install-skill              # writes .claude/skills/create-outfit/SKILL.md
+# then just ask Claude to "make an outfit that ..." and it takes over:
+# it interviews you, picks least-privilege capabilities, writes the spec,
+# and runs `outfit validate` + `outfit doctor` to check it.
+```
+
 ## The spec
 
 ```yaml
@@ -70,7 +79,7 @@ description: Buy-side equity analyst.
 identity:
   prompt: |
     You are a skeptical buy-side equity analyst...
-capabilities:                     # PORTABLE — implemented + enforced by the gateway
+capabilities:                     # PORTABLE - implemented + enforced by the gateway
   - id: web.search
     enforcement: hard
     scope: { domains: ["*"] }
@@ -100,7 +109,7 @@ See [`examples/`](examples/) for full outfits.
 `web.search` needs a provider: set `OUTFIT_SEARCH_PROVIDER=tavily` and
 `OUTFIT_SEARCH_API_KEY`.
 
-The ontology is a living registry — add a capability in `src/spec/ontology.ts` and
+The ontology is a living registry - add a capability in `src/spec/ontology.ts` and
 a handler in `src/gateway/capabilities.ts`, and it's available to every adapter.
 
 ## CLI
@@ -117,7 +126,8 @@ a handler in `src/gateway/capabilities.ts`, and it's available to every adapter.
 | `outfit doff` | Remove the worn outfit |
 | `outfit gateway --outfit <file>` | Run the gateway (used by adapters) |
 | `outfit targets` | List adapters + conformance matrices |
-| `outfit install-command` | Install the `/outfit` slash command |
+| `outfit install-command` | Install the `/outfit` picker slash command |
+| `outfit install-skill` | Install the `create-outfit` skill for Claude Code |
 
 ## Programmatic API
 
@@ -147,9 +157,9 @@ and the adapter registry (`ADAPTERS`, `getAdapter`) are exported too.
 | Target | gateway | deny-native | hooks | slash | integrations |
 |--------|:-:|:-:|:-:|:-:|:-:|
 | `claude-code` | ✓ | ✓ | ✓ | ✓ | ✓ |
-| `openai-agents` | ✓ | ✓¹ | – | – | ✓ |
+| `openai-agents` | ✓ | ✓¹ | - | - | ✓ |
 
-¹ by omission — the agent is only given the gateway.
+¹ by omission - the agent is only given the gateway.
 
 ## Search paths
 
@@ -181,7 +191,7 @@ npm test           # builds, then runs node:test suites
 
 Runtime dependencies are kept deliberately small: the MCP SDK (the gateway),
 `zod` (spec validation), `yaml` (spec parsing), and `minimatch` (scope globbing).
-The CLI uses Node's built-in `util.parseArgs` — no argument-parsing dependency.
+The CLI uses Node's built-in `util.parseArgs` - no argument-parsing dependency.
 
 ## License
 

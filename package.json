@@ -1,7 +1,7 @@
 {
   "name": "outfit",
   "version": "0.1.0",
-  "description": "Portable, enforced agent personas. One spec — any runtime.",
+  "description": "Portable, enforced agent personas. One spec - any runtime.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -20,6 +20,7 @@
     "examples",
     "registry",
     "schema",
+    "templates",
     "README.md",
     "LICENSE"
   ],

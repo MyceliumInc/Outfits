@@ -122,7 +122,7 @@ export const claudeCodeAdapter: Adapter = {
     files.push(claudePath);
     if (outfit.identity.model) {
       notes.push(
-        `Outfit requests model '${outfit.identity.model}', but a worn outfit shares the main session's model — set it with /model.`
+        `Outfit requests model '${outfit.identity.model}', but a worn outfit shares the main session's model - set it with /model.`
       );
     }
 
@@ -141,7 +141,7 @@ export const claudeCodeAdapter: Adapter = {
     }
 
     notes.push(
-      "Native tools are denied for this project — the agent can only use gateway tools.",
+      "Native tools are denied for this project - the agent can only use gateway tools.",
       "Requires the `outfit` CLI on PATH (the MCP server runs `outfit gateway`)."
     );
     if (ext.slash) {

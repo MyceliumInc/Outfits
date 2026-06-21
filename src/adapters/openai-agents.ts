@@ -55,7 +55,7 @@ if (import.meta.url === \`file://\${process.argv[1]}\`) {
       notes: [
         "Requires `@openai/agents` and the `outfit` CLI on PATH.",
         `Run with: node ${outfit.name}.openai.mjs "your prompt"`,
-        "API approximate — verify against your installed @openai/agents version.",
+        "API approximate - verify against your installed @openai/agents version.",
       ],
     };
   },

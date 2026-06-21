@@ -125,7 +125,7 @@ export async function runGateway(outfit: Outfit): Promise<void> {
     }
   });
 
-  log(`wearing "${outfit.name}" — exposing ${tools.length} tool(s): ${tools.map((t) => t.name).join(", ")}`);
+  log(`wearing "${outfit.name}" - exposing ${tools.length} tool(s): ${tools.map((t) => t.name).join(", ")}`);
 
   const transport = new StdioServerTransport();
   await server.connect(transport);

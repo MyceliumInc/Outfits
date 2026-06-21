@@ -41,7 +41,7 @@ export function validateSemantics(outfit: Outfit): ValidationIssue[] {
     if (!isKnownCapability(cap.id)) {
       issues.push({
         level: "error",
-        message: `Unknown capability "${cap.id}". Not in the ontology — use an integration instead, or add it to the ontology.`,
+        message: `Unknown capability "${cap.id}". Not in the ontology - use an integration instead, or add it to the ontology.`,
       });
       continue;
     }
@@ -49,19 +49,19 @@ export function validateSemantics(outfit: Outfit): ValidationIssue[] {
     if (def.scope === "shell" && cap.scope && !("allow" in cap.scope)) {
       issues.push({
         level: "warning",
-        message: `Capability "${cap.id}" has no "allow" list — every command will be denied.`,
+        message: `Capability "${cap.id}" has no "allow" list - every command will be denied.`,
       });
     }
     if (def.scope === "fs" && cap.scope && !("paths" in cap.scope)) {
       issues.push({
         level: "warning",
-        message: `Capability "${cap.id}" has no "paths" list — every path will be denied.`,
+        message: `Capability "${cap.id}" has no "paths" list - every path will be denied.`,
       });
     }
     if (def.scope === "net" && cap.scope && !("domains" in cap.scope)) {
       issues.push({
         level: "warning",
-        message: `Capability "${cap.id}" has no "domains" list — every request will be denied.`,
+        message: `Capability "${cap.id}" has no "domains" list - every request will be denied.`,
       });
     }
   }
