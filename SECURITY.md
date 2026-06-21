@@ -7,9 +7,8 @@ are taken seriously.
 
 Please report security issues privately. Do not open a public GitHub issue.
 
-- Preferred: open a private advisory via GitHub Security Advisories on this repo
-  (Security tab -> Report a vulnerability).
-- Alternatively, email bnottonson@gmail.com with the details.
+Open a private advisory via GitHub Security Advisories on this repo
+(Security tab -> Report a vulnerability).
 
 Please include:
 

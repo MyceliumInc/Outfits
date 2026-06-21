@@ -49,7 +49,13 @@ scope-checked, and native tools are denied. So "read-only reviewer" means it
 
 ## Quickstart
 
-Install from source (not yet published to npm):
+Install from npm:
+
+```bash
+npm install -g @myceliuminc/outfit
+```
+
+Or from source:
 
 ```bash
 git clone https://github.com/MyceliumInc/Outfits && cd Outfits

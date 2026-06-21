@@ -8,6 +8,11 @@ updates:
     groups:
       dev-dependencies:
         dependency-type: development
+    ignore:
+      # Major bumps need a deliberate migration (e.g. zod 4, TypeScript 6,
+      # @types/node tracking a newer runtime); take them on intentionally.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     commit-message:
       prefix: deps
       prefix-development: deps-dev
