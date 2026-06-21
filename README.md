@@ -1,4 +1,8 @@
-# Outfit
+<p align="center">
+  <img src="https://raw.githubusercontent.com/MyceliumInc/Outfits/HEAD/assets/banner.png" alt="Outfit - a row of cute agent mascots, each wearing a different outfit" width="640">
+</p>
+
+<h1 align="center">Outfit</h1>
 
 [![CI](https://github.com/MyceliumInc/Outfits/actions/workflows/ci.yml/badge.svg)](https://github.com/MyceliumInc/Outfits/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)

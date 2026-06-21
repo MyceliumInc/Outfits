@@ -3,6 +3,10 @@
 All notable changes to this project are documented here. The format is based on
 Keep a Changelog, and this project adheres to semantic versioning.
 
+## [0.1.2] - 2026-06-21
+
+- Add project logo: a cute multi-outfit mascot banner shown at the top of the README.
+
 ## [0.1.1] - 2026-06-21
 
 Documentation and packaging fixes for the public release.
