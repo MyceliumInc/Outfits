@@ -15,18 +15,15 @@ identity:
 
 capabilities:
   - id: web.search
-    enforcement: hard
     scope:
       domains: ["*"]
   - id: http.fetch
-    enforcement: hard
     scope:
       domains:
         - "*.sec.gov"
         - "query1.finance.yahoo.com"
         - "*.wsj.com"
   - id: fs.write
-    enforcement: hard
     scope:
       paths: ["reports/**"]
 

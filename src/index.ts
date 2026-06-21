@@ -2,6 +2,8 @@ export * from "./spec/index.js";
 export * from "./adapters/index.js";
 export {
   runGateway,
+  buildGatewayServer,
+  type GatewayServer,
   HANDLERS,
   sanitizedEnv,
   type CapabilityHandler,

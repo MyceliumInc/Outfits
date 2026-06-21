@@ -14,7 +14,6 @@ identity:
 
 capabilities:
   - id: shell.exec
-    enforcement: hard
     scope:
       allow:
         - "rg *"
@@ -24,15 +23,12 @@ capabilities:
         - "git log*"
         - "git grep*"
   - id: fs.read
-    enforcement: hard
     scope:
       paths: ["**/*"]
   - id: fs.list
-    enforcement: hard
     scope:
       paths: ["**/*"]
   - id: web.search
-    enforcement: soft
     scope:
       domains: ["*"]
 

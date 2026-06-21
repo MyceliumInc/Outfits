@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
 import { parse as parseYaml } from "yaml";
 import { Outfit } from "./schema.js";
-import { ONTOLOGY, isKnownCapability } from "./ontology.js";
+import { ONTOLOGY, isKnownCapability, SCOPE_KINDS } from "./ontology.js";
 
 export * from "./schema.js";
 export * from "./ontology.js";
@@ -46,22 +46,11 @@ export function validateSemantics(outfit: Outfit): ValidationIssue[] {
       continue;
     }
     const def = ONTOLOGY[cap.id];
-    if (def.scope === "shell" && cap.scope && !("allow" in cap.scope)) {
+    const kind = SCOPE_KINDS[def.scope];
+    if (cap.scope && !kind.requiredKeys.some((k) => k in cap.scope)) {
       issues.push({
         level: "warning",
-        message: `Capability "${cap.id}" has no "allow" list - every command will be denied.`,
-      });
-    }
-    if (def.scope === "fs" && cap.scope && !("paths" in cap.scope)) {
-      issues.push({
-        level: "warning",
-        message: `Capability "${cap.id}" has no "paths" list - every path will be denied.`,
-      });
-    }
-    if (def.scope === "net" && cap.scope && !("domains" in cap.scope)) {
-      issues.push({
-        level: "warning",
-        message: `Capability "${cap.id}" has no "domains" list - every request will be denied.`,
+        message: `Capability "${cap.id}" ${kind.emptyWarning}`,
       });
     }
   }

@@ -12,7 +12,8 @@ test("loads a valid example outfit with defaults applied", () => {
   const { outfit } = loadOutfit("examples/code-reviewer.outfit.yaml");
   assert.equal(outfit.name, "code-reviewer");
   assert.equal(outfit.apiVersion, "outfit/v1");
-  assert.equal(outfit.capabilities[0].enforcement, "hard");
+  assert.equal(outfit.capabilities[0].id, "shell.exec");
+  assert.ok(Array.isArray(outfit.capabilities[0].scope.allow));
 });
 
 test("rejects an unknown capability in semantic validation", () => {

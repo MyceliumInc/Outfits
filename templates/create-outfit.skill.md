@@ -88,6 +88,11 @@ capabilities:
 Notes:
 - Shell globs: `*` spans everything including `/`. Always set `allow`; add `deny`
   for sharp edges even inside an allowed family (e.g. allow `git *`, deny `git push*`).
+- The gateway blocks shell operators (`;`, `&`, `|`, backtick, `<`, `>`, `$(`, `${`)
+  so an allowed command cannot chain another. It cannot stop a permitted binary
+  from spawning processes via its own flags, so avoid wildcarding tools with exec
+  escapes (`find`, `xargs`, `env`, `git -c`, `awk`, `sh`); scope to specific
+  subcommands where possible.
 - `web.search` needs a provider at run time: `OUTFIT_SEARCH_PROVIDER` (e.g. `tavily`)
   and `OUTFIT_SEARCH_API_KEY`.
 - If the persona needs something not in this list, use `integrations` (a raw MCP

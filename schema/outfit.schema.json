@@ -26,7 +26,6 @@
         "required": ["id"],
         "properties": {
           "id": { "type": "string" },
-          "enforcement": { "enum": ["hard", "soft"] },
           "scope": { "type": "object" }
         }
       }

@@ -24,7 +24,13 @@ interface ExposedTool {
   upstreamName?: string;
 }
 
-export async function runGateway(outfit: Outfit): Promise<void> {
+export interface GatewayServer {
+  server: Server;
+  toolNames: string[];
+  close: () => Promise<void>;
+}
+
+export async function buildGatewayServer(outfit: Outfit): Promise<GatewayServer> {
   const tools: ExposedTool[] = [];
 
   for (const cap of outfit.capabilities) {
@@ -125,15 +131,25 @@ export async function runGateway(outfit: Outfit): Promise<void> {
     }
   });
 
-  log(`wearing "${outfit.name}" - exposing ${tools.length} tool(s): ${tools.map((t) => t.name).join(", ")}`);
+  const close = async () => {
+    for (const c of clients) {
+      try { await c.close(); } catch {}
+    }
+  };
+
+  return { server, toolNames: tools.map((t) => t.name), close };
+}
+
+export async function runGateway(outfit: Outfit): Promise<void> {
+  const { server, toolNames, close } = await buildGatewayServer(outfit);
+
+  log(`wearing "${outfit.name}" - exposing ${toolNames.length} tool(s): ${toolNames.join(", ")}`);
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
 
   const shutdown = async () => {
-    for (const c of clients) {
-      try { await c.close(); } catch {}
-    }
+    await close();
     process.exit(0);
   };
   process.on("SIGINT", shutdown);

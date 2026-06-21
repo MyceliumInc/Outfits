@@ -41,20 +41,25 @@ interface Parsed {
 }
 
 function parse(argv: string[]): Parsed {
-  const { values, positionals } = parseArgs({
-    args: argv,
-    allowPositionals: true,
-    options: {
-      target: { type: "string", short: "t" },
-      out: { type: "string", short: "o" },
-      outfit: { type: "string" },
-      json: { type: "boolean" },
-      force: { type: "boolean" },
-      help: { type: "boolean", short: "h" },
-      version: { type: "boolean", short: "v" },
-    },
-  });
-  return { positionals, values: values as Parsed["values"] };
+  try {
+    const { values, positionals } = parseArgs({
+      args: argv,
+      allowPositionals: true,
+      options: {
+        target: { type: "string", short: "t" },
+        out: { type: "string", short: "o" },
+        outfit: { type: "string" },
+        json: { type: "boolean" },
+        force: { type: "boolean" },
+        help: { type: "boolean", short: "h" },
+        version: { type: "boolean", short: "v" },
+      },
+    });
+    return { positionals, values: values as Parsed["values"] };
+  } catch (err) {
+    const detail = err instanceof Error ? err.message.split(".")[0] : String(err);
+    throw new CliError(`${detail}. Run \`outfit help\` for usage.`);
+  }
 }
 
 function target(p: Parsed): string {
@@ -94,34 +99,54 @@ function pruneDirIfEmpty(dir: string): void {
   } catch {}
 }
 
+function readJsonFile(path: string): any {
+  try {
+    return JSON.parse(readFileSync(path, "utf8"));
+  } catch {
+    return undefined;
+  }
+}
+
 function snapshotState(cwd: string): {
   created: { mcp: boolean; settings: boolean };
   prevDeny: string[];
   prevAllow: string[];
+  settingsKnown: boolean;
 } {
   const mcpPath = join(cwd, ".mcp.json");
   const settingsPath = join(cwd, ".claude", "settings.json");
+  const hadSettings = existsSync(settingsPath);
   let prevDeny: string[] = [];
   let prevAllow: string[] = [];
-  if (existsSync(settingsPath)) {
-    try {
-      const s = JSON.parse(readFileSync(settingsPath, "utf8"));
+  let settingsKnown = !hadSettings;
+  if (hadSettings) {
+    const s = readJsonFile(settingsPath);
+    if (s) {
       prevDeny = s.permissions?.deny ?? [];
       prevAllow = s.permissions?.allow ?? [];
-    } catch {}
+      settingsKnown = true;
+    }
   }
   return {
-    created: { mcp: !existsSync(mcpPath), settings: !existsSync(settingsPath) },
+    created: { mcp: !existsSync(mcpPath), settings: !hadSettings },
     prevDeny,
     prevAllow,
+    settingsKnown,
   };
 }
 
 function removeWorn(cwd: string): string | null {
   const manifestPath = join(cwd, ".outfit", "applied.json");
   if (!existsSync(manifestPath)) return null;
-  const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+  const manifest = readJsonFile(manifestPath);
+  if (!manifest) {
+    rmSync(manifestPath, { force: true });
+    return null;
+  }
   const files: string[] = manifest.files ?? [];
+
+  const mcpPath = join(cwd, ".mcp.json");
+  const settingsPath = join(cwd, ".claude", "settings.json");
 
   for (const f of files) {
     if (f.endsWith(".mcp.json") || f.endsWith("settings.json")) continue;
@@ -137,25 +162,25 @@ function removeWorn(cwd: string): string | null {
   }
   pruneDirIfEmpty(join(cwd, ".claude", "skills"));
 
-  const mcpPath = join(cwd, ".mcp.json");
   if (existsSync(mcpPath)) {
-    const mcp = JSON.parse(readFileSync(mcpPath, "utf8"));
+    const mcp = readJsonFile(mcpPath) ?? {};
     if (mcp.mcpServers) delete mcp.mcpServers[manifest.serverName];
     const empty = !mcp.mcpServers || Object.keys(mcp.mcpServers).length === 0;
     if (empty && manifest.created?.mcp) rmSync(mcpPath, { force: true });
     else writeFileSync(mcpPath, JSON.stringify(mcp, null, 2) + "\n");
   }
 
-  const settingsPath = join(cwd, ".claude", "settings.json");
   if (existsSync(settingsPath)) {
     if (manifest.created?.settings) {
       rmSync(settingsPath, { force: true });
-    } else {
-      const s = JSON.parse(readFileSync(settingsPath, "utf8"));
-      s.permissions = s.permissions ?? {};
-      s.permissions.deny = manifest.prevDeny ?? [];
-      s.permissions.allow = manifest.prevAllow ?? [];
-      writeFileSync(settingsPath, JSON.stringify(s, null, 2) + "\n");
+    } else if (manifest.settingsKnown !== false) {
+      const s = readJsonFile(settingsPath);
+      if (s) {
+        s.permissions = s.permissions ?? {};
+        s.permissions.deny = manifest.prevDeny ?? [];
+        s.permissions.allow = manifest.prevAllow ?? [];
+        writeFileSync(settingsPath, JSON.stringify(s, null, 2) + "\n");
+      }
     }
   }
 
@@ -165,7 +190,13 @@ function removeWorn(cwd: string): string | null {
   return manifest.name;
 }
 
-const commands: Record<string, { summary: string; run: (p: Parsed) => Promise<void> | void }> = {
+interface Command {
+  summary: string;
+  usage?: string;
+  run: (p: Parsed) => Promise<void> | void;
+}
+
+const commands: Record<string, Command> = {
   list: {
     summary: "List available outfits across search paths",
     run(p) {
@@ -201,33 +232,52 @@ const commands: Record<string, { summary: string; run: (p: Parsed) => Promise<vo
 
   validate: {
     summary: "Validate an outfit against the schema and ontology",
+    usage: "outfit validate <fileOrName> [--json]",
     run(p) {
       const ref = p.positionals[0] ?? die("Usage: outfit validate <fileOrName>");
       const { outfit } = resolveOutfit(ref);
       const issues = validateSemantics(outfit);
+      const hasError = issues.some((i) => i.level === "error");
+      if (p.values.json) {
+        console.log(JSON.stringify({ outfit: outfit.name, ok: !hasError, issues }, null, 2));
+        if (hasError) process.exitCode = 1;
+        return;
+      }
       if (!issues.length) {
         console.log(C.green(`✓ ${outfit.name} is valid.`));
         return;
       }
       printIssues(issues);
-      if (issues.some((i) => i.level === "error")) process.exitCode = 1;
+      if (hasError) process.exitCode = 1;
     },
   },
 
   doctor: {
     summary: "Preflight: can the target runtime enforce this outfit?",
+    usage: "outfit doctor <fileOrName> [-t target] [--json]",
     run(p) {
       const ref = p.positionals[0] ?? die("Usage: outfit doctor <fileOrName> [-t target]");
       const { outfit } = resolveOutfit(ref);
       const report = doctor(outfit, target(p));
       const adapter = getAdapter(target(p));
+      if (p.values.json) {
+        console.log(
+          JSON.stringify(
+            { outfit: outfit.name, target: target(p), ok: report.ok, issues: report.issues },
+            null,
+            2
+          )
+        );
+        if (!report.ok) process.exitCode = 1;
+        return;
+      }
       console.log(C.bold(`\nDoctor: ${outfit.name} → ${adapter.title}\n`));
 
       console.log(C.dim("  Capabilities:"));
       for (const cap of outfit.capabilities) {
         const known = ONTOLOGY[cap.id];
         const mark = known ? C.green("✓") : C.red("✗");
-        console.log(`    ${mark} ${cap.id} ${C.dim(`(${cap.enforcement})`)}`);
+        console.log(`    ${mark} ${cap.id}`);
       }
       if (outfit.integrations.length) {
         console.log(C.dim("  Integrations:"));
@@ -252,6 +302,7 @@ const commands: Record<string, { summary: string; run: (p: Parsed) => Promise<vo
 
   compile: {
     summary: "Compile an outfit into runtime config",
+    usage: "outfit compile <fileOrName> [-t target] [-o dir]",
     async run(p) {
       const ref = p.positionals[0] ?? die("Usage: outfit compile <fileOrName> -t <target> -o <dir>");
       const { outfit, path } = resolveOutfit(ref);
@@ -271,6 +322,7 @@ const commands: Record<string, { summary: string; run: (p: Parsed) => Promise<vo
 
   use: {
     summary: "Wear an outfit in the current project (Claude Code)",
+    usage: "outfit use <fileOrName> [-t target] [--force]",
     async run(p) {
       const ref = p.positionals[0] ?? die("Usage: outfit use <fileOrName> [-t target] [--force]");
       const cwd = process.cwd();
@@ -304,6 +356,7 @@ const commands: Record<string, { summary: string; run: (p: Parsed) => Promise<vo
             created: snapshot.created,
             prevDeny: snapshot.prevDeny,
             prevAllow: snapshot.prevAllow,
+            settingsKnown: snapshot.settingsKnown,
           },
           null,
           2
@@ -352,6 +405,7 @@ const commands: Record<string, { summary: string; run: (p: Parsed) => Promise<vo
 
   gateway: {
     summary: "Run the Outfit Gateway (MCP server) for an outfit",
+    usage: "outfit gateway --outfit <file>",
     async run(p) {
       const file = (p.values.outfit as string) ?? die("Usage: outfit gateway --outfit <file>");
       const { outfit } = loadOutfit(file);
@@ -361,6 +415,7 @@ const commands: Record<string, { summary: string; run: (p: Parsed) => Promise<vo
 
   init: {
     summary: "Scaffold a new outfit in ./outfits",
+    usage: "outfit init <name>",
     run(p) {
       const name = p.positionals[0] ?? die("Usage: outfit init <name>");
       if (!/^[a-z0-9][a-z0-9-]*$/.test(name)) die("name must be kebab-case (a-z, 0-9, -).");
@@ -399,7 +454,17 @@ const commands: Record<string, { summary: string; run: (p: Parsed) => Promise<vo
 
   targets: {
     summary: "List available compile targets and what they can enforce",
-    run() {
+    run(p) {
+      if (p.values.json) {
+        console.log(
+          JSON.stringify(
+            Object.values(ADAPTERS).map((a) => ({ id: a.id, title: a.title, conformance: a.conformance })),
+            null,
+            2
+          )
+        );
+        return;
+      }
       console.log(C.bold("\nTargets:\n"));
       for (const a of Object.values(ADAPTERS)) {
         console.log(`  ${C.cyan(a.id)} - ${a.title}`);
@@ -428,18 +493,23 @@ identity:
 
 capabilities:
   - id: fs.read
-    enforcement: hard
     scope:
       paths: ["**/*"]
   - id: shell.exec
-    enforcement: hard
     scope:
       allow: ["ls *", "cat *", "git status"]
+      deny: ["git push*"]
 
 skills: []
 integrations: []
 extensions: {}
 `;
+}
+
+function commandHelp(name: string, cmd: Command): void {
+  console.log(`\n${C.bold("outfit " + name)} - ${cmd.summary}`);
+  console.log(`\nUsage: ${cmd.usage ?? `outfit ${name}`}`);
+  console.log();
 }
 
 function help(): void {
@@ -472,12 +542,11 @@ async function main(): Promise<void> {
     if (parsed.values.version) return void console.log(VERSION);
     return help();
   }
-  if (parsed.values.help) return help();
-
   const cmd = commands[name];
   if (!cmd) {
     die(`Unknown command "${name}". Run \`outfit help\` for usage.`);
   }
+  if (parsed.values.help) return commandHelp(name, cmd);
   await cmd.run(parsed);
 }
 

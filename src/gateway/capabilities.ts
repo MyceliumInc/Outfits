@@ -18,7 +18,10 @@ export type CapabilityHandler = (
 
 const MAX_OUTPUT = 100_000;
 const MAX_REDIRECTS = 5;
-const SECRET_ENV = /(KEY|TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL|AUTH)/i;
+const SAFE_ENV = new Set([
+  "PATH", "HOME", "USER", "LOGNAME", "SHELL", "LANG", "LANGUAGE",
+  "TERM", "TMPDIR", "TMP", "TEMP", "TZ", "PWD", "SYSTEMROOT",
+]);
 
 function truncate(s: string): string {
   return s.length > MAX_OUTPUT ? s.slice(0, MAX_OUTPUT) + "\n…[truncated]" : s;
@@ -27,8 +30,8 @@ function truncate(s: string): string {
 export function sanitizedEnv(extra: Record<string, string> = {}): Record<string, string> {
   const env: Record<string, string> = {};
   for (const [k, v] of Object.entries(process.env)) {
-    if (v === undefined || SECRET_ENV.test(k) || k.startsWith("OUTFIT_")) continue;
-    env[k] = v;
+    if (v === undefined) continue;
+    if (SAFE_ENV.has(k) || k.startsWith("LC_")) env[k] = v;
   }
   return { ...env, ...extra };
 }
@@ -82,6 +85,7 @@ export const HANDLERS: Record<string, CapabilityHandler> = {
       res = await fetch(current, { method, headers, body, redirect: "manual" });
       const location = res.status >= 300 && res.status < 400 ? res.headers.get("location") : null;
       if (!location) break;
+      await res.body?.cancel();
       if (++hops > MAX_REDIRECTS) throw new Error(`Exceeded ${MAX_REDIRECTS} redirects.`);
       current = assertUrlAllowed(new URL(location, current).toString(), scope);
     }

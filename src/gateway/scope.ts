@@ -1,5 +1,5 @@
-import { resolve, relative, dirname, basename, join } from "node:path";
-import { existsSync, realpathSync } from "node:fs";
+import { resolve, relative, dirname, join, parse, sep } from "node:path";
+import { existsSync, realpathSync, lstatSync, readlinkSync } from "node:fs";
 import { minimatch } from "minimatch";
 
 export class ScopeViolation extends Error {
@@ -9,8 +9,8 @@ export class ScopeViolation extends Error {
   }
 }
 
-function matchesAny(value: string, patterns: string[]): boolean {
-  return patterns.some((p) => minimatch(value, p, { dot: true, nocase: false }));
+function glob(value: string, pattern: string): boolean {
+  return minimatch(value, pattern, { dot: true, nocase: false });
 }
 
 function shellGlobToRegex(pattern: string): RegExp {
@@ -27,7 +27,7 @@ function shellMatchesAny(command: string, patterns: string[]): boolean {
   return patterns.some((p) => shellGlobToRegex(p).test(command));
 }
 
-const SHELL_OPERATORS = /[;&|`<>\n\r]|\$\(|\$\{|\(\)/;
+const SHELL_OPERATORS = /[;&|`<>\n\r]|\$\(|\$\{/;
 
 export function normalizeCommand(command: string): string {
   return command.trim();
@@ -52,22 +52,33 @@ export function assertShellAllowed(command: string, scope: Record<string, unknow
   }
 }
 
+function patternRoot(pattern: string, base: string): string {
+  const statics: string[] = [];
+  for (const segment of pattern.split("/")) {
+    if (/[*?[\]]/.test(segment)) break;
+    statics.push(segment);
+  }
+  return resolve(base, statics.join("/") || ".");
+}
+
+function isWithin(target: string, root: string): boolean {
+  return target === root || target.startsWith(root.endsWith(sep) ? root : root + sep);
+}
+
 function canonicalTarget(abs: string): string {
-  let cur = abs;
-  const tail: string[] = [];
-  while (!existsSync(cur)) {
-    tail.unshift(basename(cur));
-    const parent = dirname(cur);
-    if (parent === cur) return abs;
-    cur = parent;
+  const { root } = parse(abs);
+  let cur = root;
+  for (const segment of abs.slice(root.length).split(sep).filter(Boolean)) {
+    cur = join(cur, segment);
+    try {
+      if (lstatSync(cur).isSymbolicLink()) {
+        cur = resolve(dirname(cur), readlinkSync(cur));
+      }
+    } catch {
+      break;
+    }
   }
-  let realBase: string;
-  try {
-    realBase = realpathSync(cur);
-  } catch {
-    return abs;
-  }
-  return tail.length ? join(realBase, ...tail) : realBase;
+  return cur;
 }
 
 function realCwd(): string {
@@ -80,20 +91,28 @@ function realCwd(): string {
 
 export function assertPathAllowed(path: string, scope: Record<string, unknown>): string {
   const paths = Array.isArray(scope.paths) ? (scope.paths as string[]) : [];
-  const abs = resolve(process.cwd(), path);
-  if (!paths.length || (!matchesAny(path, paths) && !matchesAny(abs, paths))) {
+  if (!paths.length) {
     throw new ScopeViolation(`Path not permitted by this outfit's fs allow-list: ${path}`);
   }
+  const cwd = process.cwd();
+  const abs = resolve(cwd, path);
   const canonical = canonicalTarget(abs);
-  if (canonical !== abs) {
-    const relCanonical = relative(realCwd(), canonical);
-    if (!matchesAny(canonical, paths) && !matchesAny(relCanonical, paths)) {
-      throw new ScopeViolation(
-        `Path resolves through a symlink outside this outfit's fs allow-list: ${path}`
-      );
-    }
+
+  const permitted = (target: string, relForGlob: string, base: string): boolean =>
+    paths.some((p) => {
+      const root = patternRoot(p, base);
+      return isWithin(target, root) && (glob(relForGlob, p) || glob(target, p));
+    });
+
+  if (!permitted(abs, path, cwd)) {
+    throw new ScopeViolation(`Path not permitted by this outfit's fs allow-list: ${path}`);
   }
-  return abs;
+  if (canonical !== abs && !permitted(canonical, relative(realCwd(), canonical), realCwd())) {
+    throw new ScopeViolation(
+      `Path resolves through a symlink outside this outfit's fs allow-list: ${path}`
+    );
+  }
+  return canonical;
 }
 
 function domainMatches(host: string, pattern: string): boolean {

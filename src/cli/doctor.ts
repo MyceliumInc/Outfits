@@ -2,6 +2,7 @@ import { execSync } from "node:child_process";
 import {
   Outfit,
   validateSemantics,
+  ONTOLOGY,
   type ValidationIssue,
 } from "../spec/index.js";
 import { getAdapter } from "../adapters/index.js";
@@ -28,12 +29,21 @@ export function doctor(outfit: Outfit, target: string): DoctorReport {
   const adapter = getAdapter(target);
   const c = adapter.conformance;
 
-  const hardCaps = outfit.capabilities.filter((x) => x.enforcement === "hard");
-  if (hardCaps.length && !(c.routeViaGateway && c.denyNative)) {
+  if (outfit.capabilities.length && !(c.routeViaGateway && c.denyNative)) {
     issues.push({
       level: "error",
-      message: `${adapter.title} cannot enforce hard capabilities (needs gateway routing + native deny).`,
+      message: `${adapter.title} cannot enforce capabilities (needs gateway routing + native deny).`,
     });
+  }
+
+  for (const cap of outfit.capabilities) {
+    const missing = (ONTOLOGY[cap.id]?.requiresEnv ?? []).filter((v) => !process.env[v]);
+    if (missing.length) {
+      issues.push({
+        level: "warning",
+        message: `Capability "${cap.id}" needs environment not set here: ${missing.join(", ")}.`,
+      });
+    }
   }
 
   const hardInteg = outfit.integrations.filter((x) => x.enforcement === "hard");

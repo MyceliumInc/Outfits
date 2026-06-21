@@ -6,6 +6,24 @@ Keep a Changelog, and this project adheres to semantic versioning.
 ## [Unreleased]
 
 ### Security
+- `fs.*` confines every path to an allowed root, so a broad glob like `**/*` can
+  no longer satisfy an absolute path such as `/etc/passwd`.
+- Path canonicalization resolves symlinks per segment, including a dangling final
+  component, closing the `fs.write` symlink-escape; the canonical path is returned.
+- Subprocess environments use a small allow-list instead of a leaky keyword denylist.
+
+### Changed
+- Removed the no-op `enforcement` field from capabilities (kept on integrations,
+  where it controls fatal-vs-warn on launch failure).
+- `doctor` reports per-capability runtime prerequisites (e.g. `web.search` env).
+- Scope validation is driven by a single `SCOPE_KINDS` registry.
+
+### Added
+- Per-command help (`outfit <cmd> --help`) and `--json` output for `doctor`,
+  `validate`, and `targets`; clean errors for unknown flags.
+- `buildGatewayServer` is exported for embedding and testing the gateway.
+
+### Security (initial hardening)
 - `shell.exec` now rejects shell operators (`;`, `&`, `|`, backtick, `<`, `>`,
   `$(`, `${`) so an allow-listed wildcard can no longer authorize command chaining.
 - `http.fetch` follows redirects manually and re-checks every hop against the

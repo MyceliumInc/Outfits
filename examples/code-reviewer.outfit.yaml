@@ -14,7 +14,6 @@ identity:
 
 capabilities:
   - id: shell.exec
-    enforcement: hard
     scope:
       allow:
         - "git diff*"
@@ -30,11 +29,9 @@ capabilities:
         - "git commit*"
         - "rm *"
   - id: fs.read
-    enforcement: hard
     scope:
       paths: ["**/*"]
   - id: fs.list
-    enforcement: hard
     scope:
       paths: ["**/*"]
 

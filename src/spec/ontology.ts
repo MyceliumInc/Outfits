@@ -1,11 +1,23 @@
 export type ScopeKind = "shell" | "fs" | "net";
 
+export interface ScopeKindDef {
+  requiredKeys: string[];
+  emptyWarning: string;
+}
+
+export const SCOPE_KINDS: Record<ScopeKind, ScopeKindDef> = {
+  shell: { requiredKeys: ["allow"], emptyWarning: 'has no "allow" list - every command will be denied.' },
+  fs: { requiredKeys: ["paths"], emptyWarning: 'has no "paths" list - every path will be denied.' },
+  net: { requiredKeys: ["domains"], emptyWarning: 'has no "domains" list - every request will be denied.' },
+};
+
 export interface CapabilityDef {
   id: string;
   summary: string;
   portable: boolean;
   scope: ScopeKind;
   inputSchema: Record<string, unknown>;
+  requiresEnv?: string[];
 }
 
 export const ONTOLOGY: Record<string, CapabilityDef> = {
@@ -88,6 +100,7 @@ export const ONTOLOGY: Record<string, CapabilityDef> = {
     summary: "Search the web. Requires a configured search provider.",
     portable: true,
     scope: "net",
+    requiresEnv: ["OUTFIT_SEARCH_PROVIDER", "OUTFIT_SEARCH_API_KEY"],
     inputSchema: {
       type: "object",
       properties: {

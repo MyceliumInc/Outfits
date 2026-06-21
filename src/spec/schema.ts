@@ -25,7 +25,6 @@ export type Scope = z.infer<typeof Scope>;
 
 export const Capability = z.object({
   id: z.string(),
-  enforcement: Enforcement.default("hard"),
   scope: Scope.default({}),
 });
 export type Capability = z.infer<typeof Capability>;
