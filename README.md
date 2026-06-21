@@ -29,6 +29,9 @@ tool-world*:
   exposing only the tools the contract allows.
 - Each adapter then **locks the runtime down to the gateway** and disables native
   tools. The agent can only do what the contract permits.
+- The **persona** clothes the main session directly (for Claude Code, a delimited
+  block in `CLAUDE.md`), so the agent both adopts the identity and inherits the
+  locked-down tool-world.
 
 Because enforcement is per-runtime, every adapter publishes a **conformance
 matrix**. If an outfit hard-requires something an adapter can't guarantee,
@@ -47,6 +50,7 @@ outfit list                       # discover outfits
 outfit doctor code-reviewer       # can this runtime enforce it?
 outfit use code-reviewer          # wear it in the current project (Claude Code)
 # … reload Claude Code …
+outfit status                     # what am I wearing here?
 outfit doff                       # take it off, restore native tools
 ```
 
@@ -109,10 +113,34 @@ a handler in `src/gateway/capabilities.ts`, and it's available to every adapter.
 | `outfit doctor <ref> [-t target]` | Preflight: can the target enforce it? |
 | `outfit compile <ref> -t <target> -o <dir>` | Emit runtime config |
 | `outfit use <ref> [-t target]` | Wear it in the current project |
+| `outfit status [--json]` | Show the outfit worn in this project |
 | `outfit doff` | Remove the worn outfit |
 | `outfit gateway --outfit <file>` | Run the gateway (used by adapters) |
 | `outfit targets` | List adapters + conformance matrices |
 | `outfit install-command` | Install the `/outfit` slash command |
+
+## Programmatic API
+
+Everything the CLI does is available as a typed library (ESM):
+
+```ts
+import {
+  loadOutfit,
+  validateSemantics,
+  doctor,
+  runGateway,
+  ONTOLOGY,
+} from "outfit";
+
+const { outfit } = loadOutfit("outfits/code-reviewer.outfit.yaml");
+const issues = validateSemantics(outfit);
+if (doctor(outfit, "claude-code").ok) {
+  await runGateway(outfit); // serve the outfit as an MCP gateway
+}
+```
+
+The scope enforcers (`assertShellAllowed`, `assertPathAllowed`, `assertUrlAllowed`)
+and the adapter registry (`ADAPTERS`, `getAdapter`) are exported too.
 
 ## Targets
 
@@ -133,13 +161,27 @@ Outfits are discovered (in order) from:
 ## Project layout
 
 ```
+src/index.ts    public API barrel
 src/spec/       schema + ontology + loader        (portable core)
 src/gateway/    MCP gateway: implements + enforces capabilities
 src/adapters/   per-runtime compilers + conformance matrices
 src/cli/        the `outfit` command
+test/           node:test suites
 examples/       example outfits
 registry/       static registry site
 ```
+
+## Development
+
+```bash
+npm install
+npm run build      # tsc → dist/ (+ type declarations)
+npm test           # builds, then runs node:test suites
+```
+
+Runtime dependencies are kept deliberately small: the MCP SDK (the gateway),
+`zod` (spec validation), `yaml` (spec parsing), and `minimatch` (scope globbing).
+The CLI uses Node's built-in `util.parseArgs` — no argument-parsing dependency.
 
 ## License
 

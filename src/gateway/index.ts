@@ -1,3 +1,8 @@
 export { runGateway } from "./server.js";
-export { HANDLERS } from "./capabilities.js";
-export { ScopeViolation } from "./scope.js";
+export { HANDLERS, type CapabilityHandler } from "./capabilities.js";
+export {
+  ScopeViolation,
+  assertShellAllowed,
+  assertPathAllowed,
+  assertUrlAllowed,
+} from "./scope.js";

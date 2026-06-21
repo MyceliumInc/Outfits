@@ -10,12 +10,6 @@ import {
 
 const execAsync = promisify(exec);
 
-/**
- * The gateway's own implementations of the ontology capabilities. This is what
- * makes the capabilities portable AND enforced: the gateway *is* the tool, and
- * it checks scope before doing anything.
- */
-
 export type CapabilityHandler = (
   args: Record<string, any>,
   scope: Record<string, any>
@@ -87,8 +81,6 @@ export const HANDLERS: Record<string, CapabilityHandler> = {
       );
     }
     if (provider === "tavily") {
-      // Tavily is reachable regardless of the net scope (it's the provider, not
-      // an agent-chosen destination), but we still respect an explicit domain list.
       assertUrlAllowed("https://api.tavily.com/search", { domains: ["api.tavily.com", ...(scope.domains ?? [])] });
       const res = await fetch("https://api.tavily.com/search", {
         method: "POST",

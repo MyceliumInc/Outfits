@@ -23,11 +23,6 @@ function commandExists(cmd: string): boolean {
   }
 }
 
-/**
- * Preflight: validate the outfit AND check whether the target adapter can
- * actually enforce everything the outfit hard-requires. Any unsatisfiable
- * hard requirement is an error — that's what makes enforcement honest.
- */
 export function doctor(outfit: Outfit, target: string): DoctorReport {
   const issues: ValidationIssue[] = [...validateSemantics(outfit)];
   const adapter = getAdapter(target);

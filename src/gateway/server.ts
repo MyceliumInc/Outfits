@@ -9,7 +9,6 @@ import {
 import { Outfit, ONTOLOGY, capabilityToToolName } from "../spec/index.js";
 import { HANDLERS } from "./capabilities.js";
 
-/** stderr logger — stdout is reserved for the MCP protocol. */
 function log(msg: string) {
   process.stderr.write(`[outfit-gateway] ${msg}\n`);
 }
@@ -18,7 +17,6 @@ interface ExposedTool {
   name: string;
   description: string;
   inputSchema: Record<string, unknown>;
-  /** "capability" => handled locally; "integration" => proxied upstream. */
   kind: "capability" | "integration";
   capabilityId?: string;
   scope?: Record<string, any>;
@@ -26,19 +24,9 @@ interface ExposedTool {
   upstreamName?: string;
 }
 
-/**
- * The Outfit Gateway: an MCP server that IS the agent's entire tool-world.
- *
- * - Capabilities are implemented and enforced locally by the gateway.
- * - Integrations are launched as child MCP servers and proxied through, exposing
- *   only the tools the contract allows.
- *
- * Whatever the runtime, the agent can only do what this gateway exposes.
- */
 export async function runGateway(outfit: Outfit): Promise<void> {
   const tools: ExposedTool[] = [];
 
-  // 1. Capability tools — the portable, locally enforced core.
   for (const cap of outfit.capabilities) {
     const def = ONTOLOGY[cap.id];
     if (!def) {
@@ -59,7 +47,6 @@ export async function runGateway(outfit: Outfit): Promise<void> {
     });
   }
 
-  // 2. Integration tools — raw MCP passthrough, gated to allowTools.
   const clients: Client[] = [];
   for (const integ of outfit.integrations) {
     if (!integ.command) {
@@ -125,7 +112,6 @@ export async function runGateway(outfit: Outfit): Promise<void> {
         const text = await HANDLERS[tool.capabilityId!](args, tool.scope ?? {});
         return { content: [{ type: "text", text }] };
       }
-      // Proxy to the upstream integration, contract already enforced by exposure.
       const result = await tool.client!.callTool({
         name: tool.upstreamName!,
         arguments: args,
@@ -146,7 +132,7 @@ export async function runGateway(outfit: Outfit): Promise<void> {
 
   const shutdown = async () => {
     for (const c of clients) {
-      try { await c.close(); } catch { /* ignore */ }
+      try { await c.close(); } catch {}
     }
     process.exit(0);
   };

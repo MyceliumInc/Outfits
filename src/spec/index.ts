@@ -1,5 +1,6 @@
 import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { resolve, join, basename } from "node:path";
+import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
 import { parse as parseYaml } from "yaml";
 import { Outfit } from "./schema.js";
@@ -10,7 +11,6 @@ export * from "./ontology.js";
 
 export interface LoadedOutfit {
   outfit: Outfit;
-  /** Absolute path the outfit was loaded from. */
   path: string;
 }
 
@@ -19,7 +19,6 @@ export interface ValidationIssue {
   message: string;
 }
 
-/** Parse + schema-validate a single outfit file. Throws on hard parse/schema errors. */
 export function loadOutfit(path: string): LoadedOutfit {
   const abs = resolve(path);
   if (!existsSync(abs)) throw new Error(`Outfit file not found: ${abs}`);
@@ -35,10 +34,6 @@ export function loadOutfit(path: string): LoadedOutfit {
   return { outfit: parsed.data, path: abs };
 }
 
-/**
- * Semantic validation beyond the schema: capabilities must exist in the ontology,
- * scopes must match the capability's scope kind, integrations need a command, etc.
- */
 export function validateSemantics(outfit: Outfit): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
 
@@ -90,25 +85,19 @@ export function validateSemantics(outfit: Outfit): ValidationIssue[] {
   return issues;
 }
 
-/** Directories searched for outfits, in priority order. */
 export function searchPaths(): string[] {
   const paths = [
     resolve(process.cwd(), "outfits"),
     join(homedir(), ".outfit", "outfits"),
   ];
-  // Bundled examples (resolved relative to the compiled CLI).
   try {
-    const here = new URL("../../examples", import.meta.url);
-    paths.push(here.pathname);
-  } catch {
-    /* ignore */
-  }
+    paths.push(fileURLToPath(new URL("../../examples", import.meta.url)));
+  } catch {}
   return paths;
 }
 
 const OUTFIT_FILE = /\.outfit\.(ya?ml|json)$/;
 
-/** Discover all outfits across the search paths, de-duplicated by name. */
 export function discoverOutfits(): LoadedOutfit[] {
   const seen = new Set<string>();
   const found: LoadedOutfit[] = [];
@@ -121,17 +110,14 @@ export function discoverOutfits(): LoadedOutfit[] {
         if (seen.has(loaded.outfit.name)) continue;
         seen.add(loaded.outfit.name);
         found.push(loaded);
-      } catch {
-        /* skip invalid files during discovery */
-      }
+      } catch {}
     }
   }
   return found;
 }
 
-/** Resolve an outfit by name (via discovery) or by file path. */
 export function resolveOutfit(nameOrPath: string): LoadedOutfit {
-  if (OUTFIT_FILE.test(nameOrPath) || nameOrPath.includes("/")) {
+  if (OUTFIT_FILE.test(nameOrPath) || nameOrPath.includes("/") || nameOrPath.includes("\\")) {
     return loadOutfit(nameOrPath);
   }
   const match = discoverOutfits().find((o) => o.outfit.name === nameOrPath);
